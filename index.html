@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Executive Architect | Inventory Control</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        primary: "#00346f", "primary-container": "#004a99",
+        "on-primary": "#ffffff", "primary-fixed": "#d7e2ff",
+        "primary-fixed-dim": "#abc7ff", "on-primary-fixed": "#001b3f",
+        "on-primary-fixed-variant": "#00458f",
+        secondary: "#4e5f7f", "secondary-container": "#c6d7fd",
+        "on-secondary": "#ffffff", "on-secondary-container": "#4d5d7e",
+        tertiary: "#5f2200", "tertiary-container": "#833301",
+        "tertiary-fixed": "#ffdbcc", "tertiary-fixed-dim": "#ffb694",
+        "on-tertiary": "#ffffff", "on-tertiary-fixed-variant": "#7b2f00",
+        surface: "#f8f9fa", "surface-dim": "#d9dadb",
+        "surface-bright": "#f8f9fa", "surface-tint": "#255dad",
+        "surface-container": "#edeeef", "surface-container-low": "#f3f4f5",
+        "surface-container-high": "#e7e8e9", "surface-container-highest": "#e1e3e4",
+        "surface-container-lowest": "#ffffff", "surface-variant": "#e1e3e4",
+        "on-surface": "#191c1d", "on-surface-variant": "#424751",
+        "on-background": "#191c1d", background: "#f8f9fa",
+        outline: "#737783", "outline-variant": "#c2c6d3",
+        error: "#ba1a1a", "error-container": "#ffdad6",
+        "on-error": "#ffffff", "on-error-container": "#93000a",
+        "inverse-surface": "#2e3132", "inverse-on-surface": "#f0f1f2",
+        "inverse-primary": "#abc7ff",
+      },
+      fontFamily: {
+        headline: ["Syne", "sans-serif"],
+        body: ["DM Sans", "sans-serif"],
+        mono: ["DM Mono", "monospace"],
+      },
+      borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", "2xl": "1rem", full: "9999px" },
+    },
+  },
+};
+</script>
+<style>
+  :root {
+    --sidebar-w: 260px;
+    --header-h: 64px;
+    --accent: #00346f;
+    --accent-light: #d7e2ff;
+    --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+  * { box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: #f3f4f5; overflow-x: hidden; }
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+  code, .font-mono { font-family: 'DM Mono', monospace; }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+  }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    width: var(--sidebar-w);
+    transition: transform var(--transition), box-shadow var(--transition);
+  }
+  @media (max-width: 1023px) {
+    #sidebar { transform: translateX(-100%); box-shadow: none; }
+    #sidebar.open { transform: translateX(0); box-shadow: 24px 0 60px rgba(0,0,0,.18); }
+    #main-content { margin-left: 0 !important; }
+  }
+  #overlay { transition: opacity var(--transition); }
+
+  /* ── Pages ── */
+  .page { display: none; animation: fadeUp .3s ease both; }
+  .page.active { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Nav item ── */
+  .nav-item { transition: background var(--transition), color var(--transition), transform .1s; }
+  .nav-item:active { transform: scale(.97); }
+  .nav-item.active { background: #dbeafe; color: #1e3a5f; }
+  .nav-item.active .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24; }
+
+  /* ── KPI card ── */
+  .kpi-card { transition: box-shadow .25s, transform .25s; }
+  .kpi-card:hover { box-shadow: 0 12px 40px rgba(0,52,111,.10); transform: translateY(-2px); }
+
+  /* ── Table row ── */
+  tbody tr { transition: background .15s; }
+
+  /* ── Progress bar ── */
+  .bar-fill { transition: width .8s cubic-bezier(.4,0,.2,1); }
+
+  /* ── Badge pulse ── */
+  @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.3)} }
+  .pulse { animation: pulse-dot 2s infinite; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #c2c6d3; border-radius: 99px; }
+
+  /* ── Chart bars ── */
+  .chart-bar { transition: height .7s cubic-bezier(.4,0,.2,1), background .2s; }
+  .chart-bar:hover { filter: brightness(1.12); }
+
+  /* ── Skeleton (loading) ── */
+  @keyframes shimmer { from{background-position:200% 0} to{background-position:-200% 0} }
+  .skeleton {
+    background: linear-gradient(90deg, #e7e8e9 25%, #f3f4f5 50%, #e7e8e9 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 6px;
+  }
+
+  /* ── Tooltip ── */
+  .tooltip-box {
+    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+    background: #191c1d; color: #fff; font-size: 10px; font-weight: 700;
+    padding: 4px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none;
+    opacity: 0; transition: opacity .15s;
+  }
+  .has-tooltip:hover .tooltip-box { opacity: 1; }
+
+  /* ── SVG chart line ── */
+  .chart-path { stroke-dasharray: 2000; stroke-dashoffset: 2000; transition: stroke-dashoffset 1.4s ease; }
+  .chart-path.drawn { stroke-dashoffset: 0; }
+</style>
+</head>
+<body class="text-on-surface">
+
+<!-- Overlay -->
+<div id="overlay" class="fixed inset-0 bg-black/40 z-40 hidden opacity-0 lg:hidden" onclick="closeSidebar()"></div>
+
+<!-- ════════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════════ -->
+<aside id="sidebar" class="fixed left-0 top-0 h-full z-50 bg-white border-r border-outline-variant/20 flex flex-col py-6">
+  <!-- Brand -->
+  <div class="px-6 mb-8">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-[20px]" style="font-variation-settings:'FILL' 1,'wght' 600,'GRAD' 0,'opsz' 24">warehouse</span>
+      </div>
+      <div>
+        <p class="text-[11px] uppercase tracking-[.18em] font-bold text-primary leading-none font-headline">Executive</p>
+        <p class="text-[15px] font-bold text-on-surface leading-tight font-headline">Architect</p>
+      </div>
+    </div>
+    <p class="text-[10px] text-outline font-mono mt-3 tracking-widest uppercase">Inventory v4.2 · Live</p>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 flex flex-col gap-0.5 px-3">
+    <button onclick="showPage('dashboard')" class="nav-item active w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface hover:bg-surface-container" data-page="dashboard">
+      <span class="material-symbols-outlined text-[20px]">dashboard</span>
+      <span>KPI Dashboard</span>
+    </button>
+    <button onclick="showPage('forecast')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="forecast">
+      <span class="material-symbols-outlined text-[20px]">query_stats</span>
+      <span>Forecasting</span>
+    </button>
+    <button onclick="showPage('warehouse')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="warehouse">
+      <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+      <span>Warehouse View</span>
+    </button>
+    <button onclick="showPage('rotation')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="rotation">
+      <span class="material-symbols-outlined text-[20px]">low_priority</span>
+      <span>Rotation Class</span>
+    </button>
+
+    <div class="my-3 border-t border-outline-variant/20"></div>
+
+    <button onclick="showPage('settings')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="settings">
+      <span class="material-symbols-outlined text-[20px]">settings</span>
+      <span>Ajustes</span>
+    </button>
+    <a href="#" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container">
+      <span class="material-symbols-outlined text-[20px]">contact_support</span>
+      <span>Soporte</span>
+    </a>
+  </nav>
+
+  <!-- Bottom status -->
+  <div class="px-4 mt-4">
+    <div class="bg-surface-container-low rounded-xl p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 pulse"></span>
+        <span class="text-[10px] font-bold text-outline uppercase tracking-widest">Sistema activo</span>
+      </div>
+      <button onclick="showPage('forecast')" class="w-full bg-primary text-white text-xs font-bold py-2.5 rounded-xl hover:bg-primary-container transition-colors flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined text-[16px]">add</span> Nuevo Reporte
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════ -->
+<div id="main-content" class="min-h-screen flex flex-col" style="margin-left: var(--sidebar-w)">
+
+  <!-- Top bar -->
+  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-outline-variant/15 h-16 flex items-center justify-between px-6 gap-4">
+    <div class="flex items-center gap-4 flex-1">
+      <button class="lg:hidden p-2 rounded-xl hover:bg-surface-container transition-colors" onclick="toggleSidebar()">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <!-- Search -->
+      <div class="relative max-w-xs w-full hidden sm:block">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+        <input type="text" placeholder="Buscar SKU, producto..." class="w-full bg-surface-container-low border-none rounded-full pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white outline-none transition-all" id="searchInput" oninput="handleSearch(this.value)"/>
+      </div>
+      <!-- Warehouse selector -->
+      <div class="relative hidden md:block">
+        <select onchange="updateWarehouse(this.value)" id="warehouseSelect" class="bg-surface-container-low border border-outline-variant/30 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none appearance-none pr-8 cursor-pointer">
+          <option value="alpha">Warehouse Alpha</option>
+          <option value="north">North Hub</option>
+          <option value="south">Southern Depot</option>
+          <option value="east">Eastern Annex</option>
+        </select>
+        <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[16px]">expand_more</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <!-- Notif -->
+      <button id="notifBtn" onclick="toggleNotif()" class="relative p-2 rounded-xl hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+        <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-white"></span>
+      </button>
+      <!-- Notif dropdown -->
+      <div id="notifDropdown" class="hidden absolute top-16 right-16 w-80 bg-white rounded-2xl shadow-2xl border border-outline-variant/20 z-50 overflow-hidden">
+        <div class="p-4 border-b border-outline-variant/10 flex justify-between items-center">
+          <p class="font-bold text-sm font-headline">Notificaciones</p>
+          <span class="text-[10px] bg-primary text-white px-2 py-0.5 rounded-full font-bold">3 nuevas</span>
+        </div>
+        <div class="divide-y divide-outline-variant/10 max-h-72 overflow-auto">
+          <div class="p-4 hover:bg-surface-container-low cursor-pointer">
+            <p class="text-sm font-semibold">Stock crítico: SKU-5541</p>
+            <p class="text-xs text-on-surface-variant mt-0.5">Synthetic Lubricant Type-X — solo 45 unidades</p>
+            <p class="text-[10px] text-error font-bold mt-1">Hace 5 min</p>
+          </div>
+          <div class="p-4 hover:bg-surface-container-low cursor-pointer">
+            <p class="text-sm font-semibold">Envío recibido: #BT-844-L0</p>
+            <p class="text-xs text-on-surface-variant mt-0.5">1,280 unidades — Chicago → London</p>
+            <p class="text-[10px] text-outline font-bold mt-1">Hace 2 horas</p>
+          </div>
+          <div class="p-4 hover:bg-surface-container-low cursor-pointer">
+            <p class="text-sm font-semibold">Optimización sugerida</p>
+            <p class="text-xs text-on-surface-variant mt-0.5">Sección 4B — eficiencia 14% por debajo</p>
+            <p class="text-[10px] text-outline font-bold mt-1">Ayer</p>
+          </div>
+        </div>
+      </div>
+      <!-- Export -->
+      <button onclick="exportCSV()" class="hidden sm:flex items-center gap-1.5 bg-surface-container-high text-on-surface text-xs font-bold px-3 py-2 rounded-xl hover:bg-surface-variant transition-colors">
+        <span class="material-symbols-outlined text-[16px]">download</span> Exportar
+      </button>
+      <!-- Add stock -->
+      <button class="bg-primary text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-primary-container transition-colors hidden sm:block">
+        + Agregar
+      </button>
+      <!-- Avatar -->
+      <div class="w-9 h-9 rounded-full bg-primary-fixed flex items-center justify-center text-primary text-xs font-bold font-headline cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all">JD</div>
+    </div>
+  </header>
+
+  <!-- ─── Page content ─── -->
+  <main class="flex-1 p-6 md:p-8 space-y-0">
+
+    <!-- ═══ PAGE: DASHBOARD ═══ -->
+    <div id="page-dashboard" class="page active space-y-6">
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Vista general</p>
+          <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Portfolio <span class="text-primary">Performance</span></h2>
+          <p class="text-sm text-on-surface-variant mt-1">Inteligencia de inventario en tiempo real — Q3 2024</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="px-4 py-2 bg-surface-container-high rounded-xl text-xs font-bold hover:bg-surface-variant transition-colors">Filtrar</button>
+          <button onclick="exportCSV()" class="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-container transition-colors">Generar Reporte</button>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" id="kpi-grid">
+        <div class="kpi-card bg-white rounded-2xl p-6 relative overflow-hidden border border-outline-variant/10">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+          <div class="flex justify-between items-start mb-3">
+            <div class="p-2.5 bg-primary-fixed rounded-xl"><span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">inventory</span></div>
+            <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">+12%</span>
+          </div>
+          <p class="text-3xl font-bold font-headline text-on-surface" id="kpi-products">47,884</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mt-1">Productos Activos</p>
+        </div>
+        <div class="kpi-card bg-white rounded-2xl p-6 relative overflow-hidden border border-outline-variant/10">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+          <div class="flex justify-between items-start mb-3">
+            <div class="p-2.5 bg-secondary-container rounded-xl"><span class="material-symbols-outlined text-secondary text-[20px]" style="font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">analytics</span></div>
+            <span class="text-[10px] font-bold text-primary bg-primary-fixed px-2 py-1 rounded-full">24m</span>
+          </div>
+          <p class="text-3xl font-bold font-headline text-on-surface" id="kpi-movements">116,253</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mt-1">Movimientos Totales</p>
+        </div>
+        <div class="kpi-card bg-white rounded-2xl p-6 relative overflow-hidden border border-outline-variant/10">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+          <div class="flex justify-between items-start mb-3">
+            <div class="p-2.5 bg-tertiary-fixed rounded-xl"><span class="material-symbols-outlined text-tertiary text-[20px]" style="font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">warehouse</span></div>
+          </div>
+          <p class="text-3xl font-bold font-headline text-on-surface" id="kpi-warehouses">6</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mt-1">Almacenes Activos</p>
+        </div>
+        <div class="kpi-card bg-white rounded-2xl p-6 relative overflow-hidden border border-outline-variant/10">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div>
+          <div class="flex justify-between items-start mb-3">
+            <div class="p-2.5 bg-primary-container rounded-xl"><span class="material-symbols-outlined text-white text-[20px]" style="font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">check_circle</span></div>
+            <span class="text-[10px] font-bold text-primary bg-primary-fixed px-2 py-1 rounded-full">Verificado</span>
+          </div>
+          <p class="text-3xl font-bold font-headline text-on-surface" id="kpi-codes">18,462</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mt-1">Códigos con Stock</p>
+        </div>
+      </div>
+
+      <!-- Chart + Insight -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Bar chart -->
+        <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-outline-variant/10">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h3 class="font-bold font-headline text-on-surface">Tendencias de Pronóstico</h3>
+              <p class="text-xs text-on-surface-variant">Inventario real vs. nivel proyectado</p>
+            </div>
+            <div class="flex gap-3 text-xs font-bold">
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-primary inline-block"></span>Real</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-primary-fixed inline-block border-2 border-primary"></span>Forecast</span>
+            </div>
+          </div>
+          <div class="h-52 flex items-end gap-2 px-2" id="forecast-chart">
+            <!-- Generated by JS -->
+          </div>
+          <div class="flex justify-between mt-3 px-2 text-[10px] font-bold text-outline uppercase">
+            <span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span><span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span>
+          </div>
+        </div>
+
+        <!-- Insight card -->
+        <div class="bg-primary rounded-2xl p-7 text-white flex flex-col justify-between relative overflow-hidden shadow-xl shadow-primary/20">
+          <div class="absolute -right-16 -top-16 w-56 h-56 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+          <div>
+            <div class="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center mb-5">
+              <span class="material-symbols-outlined text-white" style="font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">lightbulb</span>
+            </div>
+            <h4 class="text-xl font-bold font-headline leading-snug mb-3">Optimización de Rotación</h4>
+            <p class="text-primary-fixed-dim text-sm leading-relaxed">La sección 4B tiene eficiencia 18% por debajo del objetivo Q4. Se sugiere reasignación logística para optimizar throughput.</p>
+          </div>
+          <div class="mt-6 space-y-3">
+            <div class="flex justify-between items-center text-sm py-2 border-b border-white/10">
+              <span class="opacity-70 text-xs">Prioridad</span>
+              <span class="font-bold text-tertiary-fixed-dim">Alta</span>
+            </div>
+            <div class="flex justify-between items-center text-sm py-2 border-b border-white/10">
+              <span class="opacity-70 text-xs">Impacto</span>
+              <span class="font-bold">+12% ingresos</span>
+            </div>
+          </div>
+          <button class="w-full mt-6 py-3 bg-white text-primary font-bold rounded-xl hover:bg-primary-fixed transition-colors text-xs uppercase tracking-widest">
+            Analizar Logística
+          </button>
+        </div>
+      </div>
+
+      <!-- Movements table -->
+      <div class="bg-white rounded-2xl border border-outline-variant/10 overflow-hidden">
+        <div class="p-6 flex justify-between items-center bg-surface-container-low/50">
+          <h3 class="font-bold font-headline text-on-surface">Movimientos Recientes</h3>
+          <button onclick="showPage('warehouse')" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">Ver todos <span class="material-symbols-outlined text-[14px]">arrow_forward</span></button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left min-w-[600px]">
+            <thead class="bg-surface-container-high/40">
+              <tr>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Batch ID</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Origen → Destino</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Unidades</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Estado</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Valor</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant/10">
+              <tr class="hover:bg-surface-container-low/50 cursor-default"><td class="px-6 py-4 font-mono text-sm font-bold text-primary">#BT-992-X1</td><td class="px-6 py-4 text-sm">Berlin WH-02 → Singapore HUB-01</td><td class="px-6 py-4 text-sm">4,500</td><td class="px-6 py-4"><span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full uppercase border border-emerald-200">En Tránsito</span></td><td class="px-6 py-4 text-sm font-bold text-right">$84,000</td></tr>
+              <tr class="hover:bg-surface-container-low/50 cursor-default"><td class="px-6 py-4 font-mono text-sm font-bold text-primary">#BT-844-L0</td><td class="px-6 py-4 text-sm">Chicago WH-01 → London WH-04</td><td class="px-6 py-4 text-sm">1,280</td><td class="px-6 py-4"><span class="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full uppercase border border-blue-200">Recibido</span></td><td class="px-6 py-4 text-sm font-bold text-right">$18,442</td></tr>
+              <tr class="hover:bg-surface-container-low/50 cursor-default"><td class="px-6 py-4 font-mono text-sm font-bold text-primary">#BT-731-M2</td><td class="px-6 py-4 text-sm">Tokyo HUB-03 → Osaka WH-05</td><td class="px-6 py-4 text-sm">820</td><td class="px-6 py-4"><span class="px-2.5 py-1 bg-tertiary-fixed text-tertiary text-[10px] font-bold rounded-full uppercase">Procesando</span></td><td class="px-6 py-4 text-sm font-bold text-right">$12,300</td></tr>
+              <tr class="hover:bg-surface-container-low/50 cursor-default"><td class="px-6 py-4 font-mono text-sm font-bold text-primary">#BT-612-K9</td><td class="px-6 py-4 text-sm">Madrid HUB-09 → Paris WH-03</td><td class="px-6 py-4 text-sm">12,400</td><td class="px-6 py-4"><span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full uppercase border border-emerald-200">En Tránsito</span></td><td class="px-6 py-4 text-sm font-bold text-right">$248,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: FORECAST ═══ -->
+    <div id="page-forecast" class="page space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Pronóstico</p>
+          <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Product <span class="text-primary">Forecast</span></h2>
+        </div>
+      </div>
+      <!-- Search bar -->
+      <div class="bg-white rounded-2xl p-5 border border-outline-variant/10 flex flex-col sm:flex-row gap-3 items-end">
+        <div class="flex-1 space-y-1.5 w-full">
+          <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Buscar Producto</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+            <input id="forecastSearch" type="text" placeholder="SKU o product_id (ej: COMP-AX500-BK)" class="w-full pl-10 pr-4 py-3 bg-surface-container-low border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" oninput="filterForecast(this.value)"/>
+          </div>
+        </div>
+        <button onclick="filterForecast(document.getElementById('forecastSearch').value)" class="bg-primary text-white px-7 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-primary-container transition-colors whitespace-nowrap">
+          <span class="material-symbols-outlined text-[18px]">analytics</span> Analizar
+        </button>
+      </div>
+
+      <!-- Forecast metrics -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Delay de Venta</p>
+          <p class="text-2xl font-bold font-headline">14 Días</p>
+          <p class="text-xs text-on-surface-variant mt-1">Lead time estándar</p>
+        </div>
+        <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Múltiplo Orden</p>
+          <p class="text-2xl font-bold font-headline">× 24</p>
+          <p class="text-xs text-on-surface-variant mt-1">Restricción bulk</p>
+        </div>
+        <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Stock Seguridad</p>
+          <p class="text-2xl font-bold font-headline">120 Un.</p>
+          <p class="text-xs text-tertiary font-bold mt-1">+12% vs año anterior</p>
+        </div>
+        <div class="kpi-card bg-primary rounded-2xl p-5 text-white relative overflow-hidden shadow-lg shadow-primary/20">
+          <p class="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">Orden Recomendada</p>
+          <p class="text-2xl font-bold font-headline">1,248 Un.</p>
+          <button class="mt-3 w-full bg-white text-primary text-[10px] font-bold py-2 rounded-xl hover:bg-primary-fixed transition-colors uppercase tracking-widest">Aprobar OC</button>
+        </div>
+      </div>
+
+      <!-- Forecast chart -->
+      <div class="bg-white rounded-2xl p-6 border border-outline-variant/10">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h3 class="font-bold font-headline text-on-surface">Proyección de Demanda</h3>
+            <p class="text-xs text-on-surface-variant">52 semanas históricas vs proyección 4 semanas</p>
+          </div>
+          <div class="flex gap-4 text-xs font-bold">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-primary inline-block"></span>Histórico</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full border-2 border-dashed border-primary inline-block"></span>Forecast</span>
+          </div>
+        </div>
+        <div class="h-64 relative flex items-end gap-1 px-2" id="forecast-bars">
+          <!-- JS generated -->
+        </div>
+        <div class="flex justify-between mt-3 text-[10px] font-bold text-outline uppercase px-2">
+          <span>Q1 2023</span><span>Q2 2023</span><span>Q3 2023</span><span>Q4 2023</span><span class="text-primary">Forecast Q1</span>
+        </div>
+      </div>
+
+      <!-- Warehouse distribution table -->
+      <div class="bg-white rounded-2xl border border-outline-variant/10 overflow-hidden">
+        <div class="p-6 bg-surface-container-low/50 flex justify-between items-center">
+          <h3 class="font-bold font-headline">Distribución Global por Almacén</h3>
+          <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase">Sync Activo</span>
+        </div>
+        <table class="w-full text-left">
+          <thead class="bg-surface-container-high/40">
+            <tr>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Ubicación</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">En Mano</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Reservado</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Utilización</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant/10">
+            <tr class="hover:bg-surface-container-low/50"><td class="px-6 py-4"><p class="text-sm font-bold">Frankfurt (EU-Central)</p><p class="text-[10px] text-on-surface-variant">Hub Principal</p></td><td class="px-6 py-4 text-sm font-medium">840</td><td class="px-6 py-4 text-sm text-tertiary font-medium">120</td><td class="px-6 py-4 w-40"><div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden"><div class="bar-fill h-full bg-primary rounded-full" style="width:78%"></div></div></td></tr>
+            <tr class="hover:bg-surface-container-low/50"><td class="px-6 py-4"><p class="text-sm font-bold">Singapore (APAC-South)</p><p class="text-[10px] text-on-surface-variant">Terminal Satélite</p></td><td class="px-6 py-4 text-sm font-medium">412</td><td class="px-6 py-4 text-sm text-tertiary font-medium">85</td><td class="px-6 py-4 w-40"><div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden"><div class="bar-fill h-full bg-primary rounded-full" style="width:45%"></div></div></td></tr>
+            <tr class="hover:bg-surface-container-low/50"><td class="px-6 py-4"><p class="text-sm font-bold">New Jersey (US-East)</p><p class="text-[10px] text-on-surface-variant">Logística Regional</p></td><td class="px-6 py-4 text-sm font-medium">2,100</td><td class="px-6 py-4 text-sm text-error font-bold">450</td><td class="px-6 py-4 w-40"><div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden"><div class="bar-fill h-full bg-error rounded-full" style="width:92%"></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: WAREHOUSE ═══ -->
+    <div id="page-warehouse" class="page space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Inventario</p>
+          <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Warehouse <span class="text-primary" id="wh-name">Alpha</span></h2>
+          <p class="text-sm text-on-surface-variant mt-1">Análisis de inventario y métricas operacionales — Q3 2024</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="exportCSV()" class="px-4 py-2 bg-surface-container-high rounded-xl text-xs font-bold hover:bg-surface-variant transition-colors">Export CSV</button>
+          <button class="px-4 py-2 bg-surface-container-high rounded-xl text-xs font-bold hover:bg-surface-variant transition-colors">Imprimir</button>
+        </div>
+      </div>
+
+      <!-- Warehouse KPIs -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="kpi-card bg-white rounded-2xl p-6 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+          <div class="flex justify-between items-start mb-3"><span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Códigos Activos</span><span class="material-symbols-outlined text-primary-fixed-dim text-[22px]">qr_code</span></div>
+          <p class="text-4xl font-bold font-headline">14,208</p>
+          <div class="mt-3 flex items-center gap-1 text-xs font-bold text-primary"><span class="material-symbols-outlined text-[14px]">trending_up</span>+2.4% mes anterior</div>
+        </div>
+        <div class="kpi-card bg-white rounded-2xl p-6 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+          <div class="flex justify-between items-start mb-3"><span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Capacidad Usada</span><span class="material-symbols-outlined text-primary-fixed-dim text-[22px]">inventory</span></div>
+          <p class="text-4xl font-bold font-headline">82.4<span class="text-xl text-on-surface-variant ml-1">%</span></p>
+          <div class="mt-3 w-full bg-surface-container rounded-full h-1.5"><div class="bar-fill bg-primary h-full rounded-full" style="width:82.4%"></div></div>
+        </div>
+        <div class="kpi-card bg-white rounded-2xl p-6 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+          <div class="flex justify-between items-start mb-3"><span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Inbound Hoy</span><span class="material-symbols-outlined text-primary-fixed-dim text-[22px]">download</span></div>
+          <p class="text-4xl font-bold font-headline">342</p>
+          <div class="mt-3 flex items-center gap-1 text-xs font-bold text-tertiary"><span class="material-symbols-outlined text-[14px]">schedule</span>12 envíos pendientes</div>
+        </div>
+      </div>
+
+      <!-- Top products table -->
+      <div class="bg-white rounded-2xl border border-outline-variant/10 overflow-hidden">
+        <div class="px-6 py-5 flex items-center justify-between bg-surface-container-low/50">
+          <div><h3 class="font-bold font-headline">Top 10 Productos por Frecuencia de Venta</h3><p class="text-xs text-on-surface-variant">Métricas de velocidad y disponibilidad</p></div>
+          <div class="flex items-center gap-2 bg-white border border-outline-variant/20 rounded-xl px-3 py-1.5 cursor-pointer hover:bg-surface-container transition-colors" onclick="toggleFilter(this)">
+            <span class="material-symbols-outlined text-[16px] text-outline">filter_list</span>
+            <span class="text-xs font-bold uppercase tracking-wider" id="filter-label">Todas las categorías</span>
+            <span class="material-symbols-outlined text-[14px] text-outline">expand_more</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left min-w-[700px]">
+            <thead class="bg-surface-container-high/40">
+              <tr>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Código</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Descripción</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Promedio Sem.</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Stock Actual</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Estado</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant/10" id="warehouse-table">
+              <!-- JS populated -->
+            </tbody>
+          </table>
+        </div>
+        <div class="px-6 py-4 border-t border-outline-variant/10 flex justify-between items-center bg-surface-container-low/30">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant" id="wh-pagination-label">Mostrando 1-5 de 10</p>
+          <div class="flex gap-1.5">
+            <button onclick="warehousePage(-1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-primary hover:text-white transition-all"><span class="material-symbols-outlined text-[16px]">chevron_left</span></button>
+            <button id="wh-page-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-xs">1</button>
+            <button onclick="warehousePage(1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-primary hover:text-white transition-all"><span class="material-symbols-outlined text-[16px]">chevron_right</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: ROTATION ═══ -->
+    <div id="page-rotation" class="page space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Clasificación</p>
+          <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Rotation <span class="text-primary">Classification</span></h2>
+          <p class="text-sm text-on-surface-variant mt-1">Velocidad de stock y métricas de rotación por SKU</p>
+        </div>
+        <button onclick="exportCSV()" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-outline-variant/20 rounded-xl text-sm font-bold hover:bg-surface-container transition-all">
+          <span class="material-symbols-outlined text-[16px]">ios_share</span> Export CSV
+        </button>
+      </div>
+
+      <!-- Rotation KPIs -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Alta Rotación</p>
+          <p class="text-3xl font-bold font-headline">1,284</p>
+          <p class="text-xs font-bold text-emerald-600 mt-1">+12% — SKUs grado A</p>
+        </div>
+        <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Media Rotación</p>
+          <p class="text-3xl font-bold font-headline">3,902</p>
+          <p class="text-xs text-on-surface-variant mt-1">SKUs grado B</p>
+        </div>
+        <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Baja Rotación</p>
+          <p class="text-3xl font-bold font-headline">842</p>
+          <p class="text-xs font-bold text-error mt-1">Riesgo sobrestock</p>
+        </div>
+        <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Stock Turn</p>
+          <p class="text-3xl font-bold font-headline">14.2</p>
+          <p class="text-xs font-bold text-primary mt-1">Objetivo cumplido</p>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="bg-white rounded-2xl p-4 border border-outline-variant/10 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Almacén</label>
+            <select id="rotationWarehouse" class="bg-surface-container-low border-none text-sm font-semibold text-primary rounded-xl px-3 py-1.5 outline-none cursor-pointer" onchange="filterRotation()">
+              <option>Central Distribution (DC-1)</option><option>North Regional (NR-4)</option><option>Western Hub (WH-2)</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Clase</label>
+            <div class="flex gap-1" id="rotation-filter-btns">
+              <button onclick="setRotationFilter('all',this)" class="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-bold transition-colors">Todo</button>
+              <button onclick="setRotationFilter('high',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">Alto</button>
+              <button onclick="setRotationFilter('medium',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">Medio</button>
+              <button onclick="setRotationFilter('low',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">Bajo</button>
+            </div>
+          </div>
+        </div>
+        <div class="relative max-w-xs w-full sm:w-auto">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[16px]">search</span>
+          <input type="text" placeholder="Buscar código..." class="w-full pl-9 pr-4 py-2 bg-surface-container-low border-none rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/20" oninput="filterRotationSearch(this.value)"/>
+        </div>
+      </div>
+
+      <!-- Rotation table -->
+      <div class="bg-white rounded-2xl border border-outline-variant/10 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left min-w-[900px]">
+            <thead class="bg-surface-container-high/40">
+              <tr>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Código</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Descripción</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Vta Semanal Prom.</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Última Venta</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Clase</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Stock</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Acción</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant/10" id="rotation-table">
+              <!-- JS populated -->
+            </tbody>
+          </table>
+        </div>
+        <div class="px-6 py-4 bg-surface-container-low/30 flex justify-between items-center border-t border-outline-variant/10">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant" id="rotation-count">Mostrando 5 de 12,482</p>
+          <div class="flex gap-1.5">
+            <button class="w-8 h-8 flex items-center justify-center text-outline-variant hover:text-primary"><span class="material-symbols-outlined text-[20px]">chevron_left</span></button>
+            <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white text-xs font-bold">1</button>
+            <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container text-xs font-bold">2</button>
+            <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container text-xs font-bold">3</button>
+            <span class="flex items-center px-1 text-outline-variant text-xs">...</span>
+            <button class="w-8 h-8 flex items-center justify-center text-outline-variant hover:text-primary"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: SETTINGS ═══ -->
+    <div id="page-settings" class="page space-y-6 max-w-2xl">
+      <div>
+        <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Configuración</p>
+        <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Ajustes <span class="text-primary">del Sistema</span></h2>
+      </div>
+      <div class="space-y-4">
+        <div class="bg-white rounded-2xl p-6 border border-outline-variant/10">
+          <h3 class="font-bold font-headline mb-4">General</h3>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between"><div><p class="text-sm font-semibold">Notificaciones en tiempo real</p><p class="text-xs text-on-surface-variant">Alertas de stock crítico</p></div><button onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-surface-container');this.querySelector('span').classList.toggle('translate-x-5')" class="relative w-12 h-6 bg-primary rounded-full transition-colors cursor-pointer"><span class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform translate-x-5"></span></button></div>
+            <div class="flex items-center justify-between"><div><p class="text-sm font-semibold">Sincronización automática</p><p class="text-xs text-on-surface-variant">Cada 5 minutos</p></div><button onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-surface-container');this.querySelector('span').classList.toggle('translate-x-5')" class="relative w-12 h-6 bg-surface-container rounded-full transition-colors cursor-pointer"><span class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></span></button></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 border border-outline-variant/10">
+          <h3 class="font-bold font-headline mb-4">Tema</h3>
+          <div class="flex gap-3">
+            <button onclick="setTheme('light',this)" class="flex-1 py-3 rounded-xl border-2 border-primary bg-white text-sm font-bold text-primary">☀️ Claro</button>
+            <button onclick="setTheme('dark',this)" class="flex-1 py-3 rounded-xl border-2 border-outline-variant/30 bg-white text-sm font-bold text-on-surface-variant">🌙 Oscuro</button>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 border border-outline-variant/10">
+          <h3 class="font-bold font-headline mb-4">Exportar datos</h3>
+          <div class="flex gap-3 flex-wrap">
+            <button onclick="exportCSV()" class="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-container transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">download</span> CSV</button>
+            <button class="px-5 py-2.5 bg-surface-container-high text-on-surface text-sm font-bold rounded-xl hover:bg-surface-variant transition-colors">JSON</button>
+            <button class="px-5 py-2.5 bg-surface-container-high text-on-surface text-sm font-bold rounded-xl hover:bg-surface-variant transition-colors">PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="px-8 py-4 border-t border-outline-variant/15 flex justify-between items-center text-[10px] font-bold text-outline uppercase tracking-widest bg-white/60">
+    <div class="flex items-center gap-3">
+      <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse"></span> Sistema Sync: Live</span>
+      <span class="hidden sm:inline">DB: WH-CENTRAL-01</span>
+    </div>
+    <span class="hidden sm:inline">Executive Architect © 2024 · v4.2.1</span>
+  </footer>
+</div>
+
+<!-- Mobile bottom nav -->
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-outline-variant/20 flex justify-around items-center py-2 z-50">
+  <button onclick="showPage('dashboard')" class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-primary" id="mob-dashboard">
+    <span class="material-symbols-outlined text-[22px]" style="font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">dashboard</span>
+    <span class="text-[9px] font-bold uppercase">KPI</span>
+  </button>
+  <button onclick="showPage('forecast')" class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-outline" id="mob-forecast">
+    <span class="material-symbols-outlined text-[22px]">query_stats</span>
+    <span class="text-[9px] font-bold uppercase">Forecast</span>
+  </button>
+  <button onclick="showPage('warehouse')" class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-outline" id="mob-warehouse">
+    <span class="material-symbols-outlined text-[22px]">inventory_2</span>
+    <span class="text-[9px] font-bold uppercase">Almacén</span>
+  </button>
+  <button onclick="showPage('rotation')" class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-outline" id="mob-rotation">
+    <span class="material-symbols-outlined text-[22px]">low_priority</span>
+    <span class="text-[9px] font-bold uppercase">Rotación</span>
+  </button>
+</nav>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const warehouseData = [
+  { code: '#SKU-8921', desc: 'High-Temp Industrial Sealant G-12', avg: '452 un.', stock: 2140, status: 'instock' },
+  { code: '#SKU-3310', desc: 'Precision Ball Bearings (Set of 12)', avg: '388 un.', stock: 845, status: 'low' },
+  { code: '#SKU-1102', desc: 'Reinforced Titanium Mesh Panels', avg: '124 un.', stock: 12400, status: 'instock' },
+  { code: '#SKU-5541', desc: 'Synthetic Lubricant Type-X', avg: '98 un.', stock: 45, status: 'critical' },
+  { code: '#SKU-9908', desc: 'Galvanized Steel Conduit 20mm', avg: '82 un.', stock: 1200, status: 'instock' },
+  { code: '#SKU-4421', desc: 'Carbon Fiber Rods 10mm', avg: '75 un.', stock: 630, status: 'low' },
+  { code: '#SKU-2230', desc: 'Hydraulic Pump Assembly HPA-7', avg: '68 un.', stock: 4800, status: 'instock' },
+  { code: '#SKU-7712', desc: 'Copper Wiring Harness Custom', avg: '12 un.', stock: 8400, status: 'low' },
+  { code: '#SKU-0045', desc: 'Hydraulic Valve Gasket Silicone', avg: '412 un.', stock: 1150, status: 'instock' },
+  { code: '#SKU-6614', desc: 'Alloy Steel Plate 4mm', avg: '55 un.', stock: 3200, status: 'instock' },
+];
+
+const rotationData = [
+  { code: 'ITM-8921-X', desc: 'Steel Bearing Assembly - 40mm', avg: 1452, date: 'Hoy', cls: 'high', stock: 4200, action: 'OPTIMIZAR REORDEN', arrow: 'arrow_forward' },
+  { code: 'ITM-0045-A', desc: 'Hydraulic Valve Gasket (Silicone)', avg: 412, date: 'Ayer', cls: 'medium', stock: 1150, action: 'MONITOREAR', arrow: 'trending_flat' },
+  { code: 'ITM-7712-B', desc: 'Copper Wiring Harness - Custom', avg: 12, date: '14 Sep', cls: 'low', stock: 8400, action: 'REVISAR LIQUIDACIÓN', arrow: 'priority_high' },
+  { code: 'ITM-1299-K', desc: 'Thermal Compound Paste - 50g', avg: 2190, date: 'Ahora', cls: 'high', stock: 310, action: 'RESTOCK URGENTE', arrow: 'bolt' },
+  { code: 'ITM-5532-Z', desc: 'Titanium Fastener M8 (Bulk)', avg: 678, date: 'Ayer', cls: 'high', stock: 12000, action: 'ESTABLE', arrow: 'check_circle' },
+  { code: 'ITM-3301-C', desc: 'Aluminum Sheet 2mm', avg: 5, date: '64 días atrás', cls: 'dead', stock: 1200, action: 'LIQUIDAR', arrow: 'warning' },
+];
+
+const statusMap = {
+  instock: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">En Stock</span>',
+  low: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-tertiary-fixed text-tertiary">Stock Bajo</span>',
+  critical: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-error-container text-error">Crítico</span>',
+};
+const clsMap = {
+  high: '<span class="px-2 py-1 bg-primary-fixed text-on-primary-fixed-variant text-[10px] font-black uppercase rounded tracking-wider">Alto</span>',
+  medium: '<span class="px-2 py-1 bg-secondary-container text-on-secondary-container text-[10px] font-black uppercase rounded tracking-wider">Medio</span>',
+  low: '<span class="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-black uppercase rounded tracking-wider">Bajo</span>',
+  dead: '<span class="px-2 py-1 bg-error-container text-error text-[10px] font-black uppercase rounded tracking-wider">Muerto</span>',
+};
+const actionColor = { high: 'text-primary', medium: 'text-on-surface-variant opacity-70', low: 'text-tertiary', dead: 'text-error' };
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let currentPage = 'dashboard';
+let whPage = 0;
+const WH_PER_PAGE = 5;
+let whData = [...warehouseData];
+let rotData = [...rotationData];
+let rotFilter = 'all';
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === name);
+    el.classList.toggle('text-on-surface-variant', el.dataset.page !== name);
+    el.classList.toggle('text-on-surface', el.dataset.page === name);
+  });
+  // Mobile bottom nav
+  document.querySelectorAll('[id^="mob-"]').forEach(el => {
+    const isActive = el.id === 'mob-' + name;
+    el.classList.toggle('text-primary', isActive);
+    el.classList.toggle('text-outline', !isActive);
+  });
+  currentPage = name;
+  closeSidebar();
+  // Trigger animations
+  if (name === 'dashboard') drawForecastChart();
+  if (name === 'forecast') drawForecastBars();
+  if (name === 'warehouse') renderWarehouseTable();
+  if (name === 'rotation') renderRotationTable();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════
+function toggleSidebar() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('overlay');
+  const isOpen = s.classList.contains('open');
+  s.classList.toggle('open', !isOpen);
+  o.classList.toggle('hidden', isOpen);
+  o.classList.toggle('opacity-0', isOpen);
+  if (!isOpen) setTimeout(() => o.classList.remove('opacity-0'), 10);
+}
+function closeSidebar() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('overlay');
+  s.classList.remove('open');
+  o.classList.add('opacity-0');
+  setTimeout(() => o.classList.add('hidden'), 300);
+}
+
+// ═══════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════
+const forecastValues = [40, 60, 55, 75, 45, 90, 65, 80, 50, 95];
+
+function drawForecastChart() {
+  const el = document.getElementById('forecast-chart');
+  if (!el) return;
+  el.innerHTML = forecastValues.map((v, i) => `
+    <div class="flex-1 flex flex-col items-center gap-2 has-tooltip relative">
+      <div class="tooltip-box">${(v * 400).toLocaleString()} un.</div>
+      <div class="w-full chart-bar bg-primary/20 rounded-t-lg hover:bg-primary/60 transition-colors" style="height:0%" data-h="${v}%"></div>
+    </div>
+  `).join('');
+  requestAnimationFrame(() => {
+    el.querySelectorAll('.chart-bar').forEach((b, i) => {
+      setTimeout(() => { b.style.height = b.dataset.h; }, i * 60);
+    });
+  });
+}
+
+function drawForecastBars() {
+  const el = document.getElementById('forecast-bars');
+  if (!el) return;
+  const vals = [30,45,60,50,75,55,70,90,80,95,70,60,50,40,30];
+  el.innerHTML = vals.map((v, i) => {
+    const isForecast = i >= 12;
+    return `
+      <div class="flex-1 flex flex-col items-center gap-2 has-tooltip relative">
+        <div class="tooltip-box">${v * 5} un.</div>
+        <div class="w-full chart-bar rounded-t-lg ${isForecast ? 'bg-primary/15 border-2 border-dashed border-primary/50' : 'bg-primary/25 hover:bg-primary/60'} transition-colors" style="height:0%" data-h="${v}%"></div>
+      </div>`;
+  }).join('');
+  requestAnimationFrame(() => {
+    el.querySelectorAll('.chart-bar').forEach((b, i) => {
+      setTimeout(() => { b.style.height = b.dataset.h; }, i * 50);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+// WAREHOUSE TABLE
+// ═══════════════════════════════════════════════
+function renderWarehouseTable() {
+  const tbody = document.getElementById('warehouse-table');
+  if (!tbody) return;
+  const start = whPage * WH_PER_PAGE;
+  const page = whData.slice(start, start + WH_PER_PAGE);
+  tbody.innerHTML = page.map(r => `
+    <tr class="hover:bg-surface-container-low/50 transition-colors cursor-default">
+      <td class="px-6 py-5 text-sm font-bold font-mono text-primary">${r.code}</td>
+      <td class="px-6 py-5 text-sm font-medium">${r.desc}</td>
+      <td class="px-6 py-5 text-sm text-on-surface-variant text-right">${r.avg}</td>
+      <td class="px-6 py-5 text-sm font-bold text-right">${r.stock.toLocaleString()}</td>
+      <td class="px-6 py-5">${statusMap[r.status]}</td>
+    </tr>
+  `).join('');
+  document.getElementById('wh-pagination-label').textContent = `Mostrando ${start+1}-${Math.min(start+WH_PER_PAGE, whData.length)} de ${whData.length}`;
+  document.getElementById('wh-page-btn').textContent = whPage + 1;
+}
+
+function warehousePage(dir) {
+  const maxPage = Math.ceil(whData.length / WH_PER_PAGE) - 1;
+  whPage = Math.max(0, Math.min(maxPage, whPage + dir));
+  renderWarehouseTable();
+}
+
+// ═══════════════════════════════════════════════
+// ROTATION TABLE
+// ═══════════════════════════════════════════════
+function renderRotationTable() {
+  const tbody = document.getElementById('rotation-table');
+  if (!tbody) return;
+  tbody.innerHTML = rotData.map(r => `
+    <tr class="hover:bg-surface-container-low/50 transition-colors">
+      <td class="px-6 py-4 font-mono text-sm font-bold text-primary">${r.code}</td>
+      <td class="px-6 py-4 text-sm font-medium">${r.desc}</td>
+      <td class="px-6 py-4 text-sm font-semibold">${r.avg.toLocaleString()}</td>
+      <td class="px-6 py-4 text-sm text-on-surface-variant">${r.date}</td>
+      <td class="px-6 py-4">${clsMap[r.cls] || ''}</td>
+      <td class="px-6 py-4 text-sm font-bold text-right ${r.cls==='low'||r.cls==='dead'?'text-error':''}">${r.stock.toLocaleString()}</td>
+      <td class="px-6 py-4">
+        <button class="text-[11px] font-bold ${actionColor[r.cls]} hover:underline underline-offset-4 flex items-center gap-1 whitespace-nowrap">
+          ${r.action} <span class="material-symbols-outlined text-[14px]">${r.arrow}</span>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+  document.getElementById('rotation-count').textContent = `Mostrando ${rotData.length} de 12,482`;
+}
+
+function setRotationFilter(cls, btn) {
+  rotFilter = cls;
+  document.querySelectorAll('#rotation-filter-btns button').forEach(b => {
+    b.className = 'px-3 py-1.5 rounded-full text-xs font-bold transition-colors border border-outline-variant/30 ' +
+      (b === btn ? 'bg-primary text-white border-transparent' : 'bg-white text-on-surface-variant hover:bg-surface-container');
+  });
+  rotData = cls === 'all' ? [...rotationData] : rotationData.filter(r => r.cls === cls);
+  renderRotationTable();
+}
+
+function filterRotationSearch(q) {
+  const base = rotFilter === 'all' ? rotationData : rotationData.filter(r => r.cls === rotFilter);
+  rotData = q ? base.filter(r => r.code.toLowerCase().includes(q.toLowerCase()) || r.desc.toLowerCase().includes(q.toLowerCase())) : base;
+  renderRotationTable();
+}
+
+function filterRotation() { renderRotationTable(); }
+
+// ═══════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════
+function handleSearch(q) {
+  if (!q) return;
+  const ql = q.toLowerCase();
+  whData = warehouseData.filter(r => r.code.toLowerCase().includes(ql) || r.desc.toLowerCase().includes(ql));
+  if (currentPage === 'warehouse') { whPage = 0; renderWarehouseTable(); }
+  if (currentPage === 'rotation') filterRotationSearch(q);
+  if (whData.length > 0 && currentPage === 'dashboard') showPage('warehouse');
+}
+
+// ═══════════════════════════════════════════════
+// WAREHOUSE SELECTOR
+// ═══════════════════════════════════════════════
+function updateWarehouse(val) {
+  const names = { alpha: 'Alpha', north: 'North Hub', south: 'Southern Depot', east: 'Eastern Annex' };
+  const el = document.getElementById('wh-name');
+  if (el) el.textContent = names[val] || val;
+}
+
+// ═══════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════
+function toggleNotif() {
+  const d = document.getElementById('notifDropdown');
+  d.classList.toggle('hidden');
+  document.addEventListener('click', function handler(e) {
+    if (!d.contains(e.target) && e.target.id !== 'notifBtn') {
+      d.classList.add('hidden');
+      document.removeEventListener('click', handler);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════════════
+function exportCSV() {
+  const rows = [['Código','Descripción','Promedio Semanal','Stock Actual','Estado']];
+  warehouseData.forEach(r => rows.push([r.code, r.desc, r.avg, r.stock, r.status]));
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'inventory_export.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════
+// THEME (placeholder)
+// ═══════════════════════════════════════════════
+function setTheme(t, btn) {
+  document.querySelectorAll('#page-settings button').forEach(b => {
+    if (b !== btn) b.classList.replace('border-primary','border-outline-variant/30');
+  });
+  btn.classList.replace('border-outline-variant/30','border-primary');
+}
+
+// ═══════════════════════════════════════════════
+// FILTER TOGGLE (warehouse)
+// ═══════════════════════════════════════════════
+let filterState = 0;
+const filterLabels = ['Todas las categorías', 'En Stock', 'Stock Bajo', 'Crítico'];
+const filterKeys = [null, 'instock', 'low', 'critical'];
+function toggleFilter(el) {
+  filterState = (filterState + 1) % filterLabels.length;
+  document.getElementById('filter-label').textContent = filterLabels[filterState];
+  const key = filterKeys[filterState];
+  whData = key ? warehouseData.filter(r => r.status === key) : [...warehouseData];
+  whPage = 0;
+  renderWarehouseTable();
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  drawForecastChart();
+  renderWarehouseTable();
+  renderRotationTable();
+});
+</script>
+</body>
+</html>
