@@ -3,7 +3,9 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
 from sklearn.metrics import mean_absolute_error
+import os
 
+#Prueba
 # Ruta relativa — funciona para cualquiera que clone el repo
 BASE = os.path.dirname(os.path.abspath(__file__))
 
