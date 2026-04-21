@@ -31,57 +31,105 @@ df_mov["año"]=df_mov["date"].dt.year
 df_mov["semana"]=df_mov["date"].dt.isocalendar().week
 df_mov["semana_fecha"] = pd.to_datetime(df_mov["año"].astype(str) + "-W" + df_mov["semana"].astype(str).str.zfill(2) + "-1",format="%G-W%V-%u")
 
-df_alm_prod=df_mov.groupby(
-    ["product_id", "wh_id", "semana_fecha"],
+df_vta_prod=df_mov.groupby(
+    ["product_id", "semana_fecha"],
     as_index=False
     ).agg(
         clientes_unicos=("customer_id", "nunique"),
         ventas=("product_qty", "sum")
     )
 
-# %%
-# Solo se usa para ver el top productos con venta
-freq_producto = df_alm_prod.groupby("product_id", as_index=False).agg(
+# %% Generación archivo rotación para html
+# Filtro de últimas 24 semanas para el análisis de rotación
+df_mov['semana_fecha'] = pd.to_datetime(df_mov['semana_fecha'])
+fecha_corte = df_vta_prod['semana_fecha'].max() - pd.Timedelta(weeks=24)
+df_vta_24 = df_vta_prod[df_vta_prod['semana_fecha'] >= fecha_corte]
+
+# Conteo de frecuencias y generación df rotació
+df_rot=df_vta_24.groupby("product_id", as_index=False).agg(
     semanas_con_venta=("semana_fecha", "nunique"),
-    total_ventas=("ventas", "sum")
+    ultima_venta=("semana_fecha", "max")
 )
 
-top_freq = freq_producto.sort_values(
-    "semanas_con_venta", ascending=False
-).head(20)
+def clasificar_rotacion(semanas):
+    if semanas >= 11:
+        return 'A'
+    elif semanas >= 5:
+        return 'B'
+    elif semanas >= 2:
+        return 'C'
+    else:
+        return 'D'
 
-print(top_freq)
+df_rot['cls'] = df_rot['semanas_con_venta'].apply(clasificar_rotacion)
+
+df_inv_consolidado = df_inv.groupby("product_id", as_index=False).agg(
+    on_hand=("on_hand", "sum"),
+    reserved_quantity=("reserved_quantity", "sum")
+)
+
+# Merge outer para no perder nada
+df_rotation = df_inv_consolidado.merge(df_rot, on="product_id", how="outer")
+
+# Llenar sin rotación como dead
+df_rotation['cls'] = df_rotation['cls'].fillna('D')
+
+# Filtrar: todos los que tienen stock + los high/medium sin stock
+df_rotation = df_rotation[
+    (df_rotation['on_hand'] > 0) |
+    (df_rotation['cls'].isin(['A', 'B']))
+]
+
+# Los sin stock quedan con on_hand NaN, los llenamos con 0
+df_rotation['on_hand'] = df_rotation['on_hand'].fillna(0)
+df_rotation['reserved_quantity'] = df_rotation['reserved_quantity'].fillna(0)
+
+df_rotation
+# %%
+df_prod.info()
+# # %%
+# # Solo se usa para ver el top productos con venta
+# freq_producto = df_alm_prod.groupby("product_id", as_index=False).agg(
+#     semanas_con_venta=("semana_fecha", "nunique"),
+#     total_ventas=("ventas", "sum")
+# )
+
+# top_freq = freq_producto.sort_values(
+#     "semanas_con_venta", ascending=False
+# ).head(20)
+
+# print(top_freq)
 
 # %%
 # Marcar el código y almacén a usar
-prod=10727
-alm=1
+# prod=10727
+# alm=1
 
-#Ordenar la BD y filtrarla
+# #Ordenar la BD y filtrarla
 
-serie=df_alm_prod[(df_alm_prod["product_id"]==prod) & (df_alm_prod["wh_id"]==alm)]
-serie=serie.sort_values("semana_fecha")
+# serie=df_alm_prod[(df_alm_prod["product_id"]==prod) & (df_alm_prod["wh_id"]==alm)]
+# serie=serie.sort_values("semana_fecha")
 
-# Crear calendario de 2 años hacia atrás
-hoy=pd.Timestamp.today()
-inicio=(hoy-pd.DateOffset(years=2)).to_period("W").start_time
-fin=hoy.to_period("W").start_time
+# # Crear calendario de 2 años hacia atrás
+# hoy=pd.Timestamp.today()
+# inicio=(hoy-pd.DateOffset(years=2)).to_period("W").start_time
+# fin=hoy.to_period("W").start_time
 
-calendario=pd.DataFrame({"semana_fecha":pd.date_range(start=inicio,end=fin,freq="W-MON")})
+# calendario=pd.DataFrame({"semana_fecha":pd.date_range(start=inicio,end=fin,freq="W-MON")})
 
-# Unir calendario con la serie
-serie=calendario.merge(serie,on="semana_fecha",how="left")
+# # Unir calendario con la serie
+# serie=calendario.merge(serie,on="semana_fecha",how="left")
 
-# Rellenar faltantes
-serie["ventas"]=serie["ventas"].fillna(0)
-serie["clientes_unicos"]=serie["clientes_unicos"].fillna(0)
+# # Rellenar faltantes
+# serie["ventas"]=serie["ventas"].fillna(0)
+# serie["clientes_unicos"]=serie["clientes_unicos"].fillna(0)
 
-# Si quieres dejar enteros
-serie["clientes_unicos"]=serie["clientes_unicos"].astype(int)
+# # Si quieres dejar enteros
+# serie["clientes_unicos"]=serie["clientes_unicos"].astype(int)
 
-# Volver a poner producto y almacén
-serie["product_id"]=serie["product_id"].fillna(prod)
-serie["wh_id"]=serie["wh_id"].fillna(alm)
+# # Volver a poner producto y almacén
+# serie["product_id"]=serie["product_id"].fillna(prod)
+# serie["wh_id"]=serie["wh_id"].fillna(alm)
 
 # # Agregar columna con los datos suavizados ES PROBABLE QUE TENGAMOS QUE METERLE SPAN 8 PARA QUE TENGA MÁS MEMORIA
 # serie["ventas_suav"] = serie["ventas"].ewm(span=4).mean()
@@ -99,99 +147,99 @@ serie["wh_id"]=serie["wh_id"].fillna(alm)
 
 # plt.xticks(rotation=45)
 # plt.show()
-# %%
-# # Generación de features para el modelo
-# LAGS (memoria reciente)
-serie["ewm_4"] = serie["ventas"].ewm(span=4).mean()
-serie["ewm_8"] = serie["ventas"].ewm(span=8).mean()
-serie["ewm_16"] = serie["ventas"].ewm(span=16).mean()
-serie["rolling_4"] = serie["ventas"].rolling(4).mean()
-serie["rolling_8"] = serie["ventas"].rolling(8).mean()
-serie["rolling_16"] = serie["ventas"].rolling(16).mean()
-serie["clientes_unicos"] = serie["clientes_unicos"]
+# # %%
+# # # Generación de features para el modelo
+# # LAGS (memoria reciente)
+# serie["ewm_4"] = serie["ventas"].ewm(span=4).mean()
+# serie["ewm_8"] = serie["ventas"].ewm(span=8).mean()
+# serie["ewm_16"] = serie["ventas"].ewm(span=16).mean()
+# serie["rolling_4"] = serie["ventas"].rolling(4).mean()
+# serie["rolling_8"] = serie["ventas"].rolling(8).mean()
+# serie["rolling_16"] = serie["ventas"].rolling(16).mean()
+# serie["clientes_unicos"] = serie["clientes_unicos"]
 
-# #Definir variable objetivo
-serie["y"]=serie["ventas"]
+# # #Definir variable objetivo
+# serie["y"]=serie["ventas"]
 
-# Limpiar NA
-df_modelo = serie.dropna().copy()
+# # Limpiar NA
+# df_modelo = serie.dropna().copy()
 
-# # Definición variables
-features = [
-    "ewm_4", "ewm_8", "ewm_16",
-    "rolling_4", "rolling_8", "rolling_16",
-    "clientes_unicos"
-]
+# # # Definición variables
+# features = [
+#     "ewm_4", "ewm_8", "ewm_16",
+#     "rolling_4", "rolling_8", "rolling_16",
+#     "clientes_unicos"
+# ]
 
-X=df_modelo[features]
-y=df_modelo["y"] 
+# X=df_modelo[features]
+# y=df_modelo["y"] 
 
-train=df_modelo.iloc[:-8]   # entrenas con todo menos últimas 8 semanas para evaluar con lo demás
-test=df_modelo.iloc[-8:]
+# train=df_modelo.iloc[:-8]   # entrenas con todo menos últimas 8 semanas para evaluar con lo demás
+# test=df_modelo.iloc[-8:]
 
-X_train=train[features]
-y_train=train["y"]
+# X_train=train[features]
+# y_train=train["y"]
 
-X_test=test[features]
-y_test=test["y"]
+# X_test=test[features]
+# y_test=test["y"]
 
-# %%
-# # Modelado random forest
+# # %%
+# # # Modelado random forest
 
-model = RandomForestRegressor(
-    n_estimators=100,
-    random_state=42
-)
+# model = RandomForestRegressor(
+#     n_estimators=100,
+#     random_state=42
+# )
 
-model.fit(X_train, y_train)
+# model.fit(X_train, y_train)
 
-pred_rf=model.predict(X_test)
+# pred_rf=model.predict(X_test)
 
-mae_rf = mean_absolute_error(y_test, pred_rf)
-media = y_test.mean()
+# mae_rf = mean_absolute_error(y_test, pred_rf)
+# media = y_test.mean()
 
-error_pct_rf = mae_rf / media
+# error_pct_rf = mae_rf / media
 
-print("RF Error %:", error_pct_rf)
-print("RF MAE:", mae_rf)
+# print("RF Error %:", error_pct_rf)
+# print("RF MAE:", mae_rf)
 
 
-# %% Modelado XGBR
-model=XGBRegressor(
-    objective="reg:squarederror",
-    n_estimators=200,
-    learning_rate=0.05,
-    max_depth=4,
-    subsample=0.8,
-    colsample_bytree=0.8,
-    random_state=42
-)
+# # %% Modelado XGBR
+# model=XGBRegressor(
+#     objective="reg:squarederror",
+#     n_estimators=200,
+#     learning_rate=0.05,
+#     max_depth=4,
+#     subsample=0.8,
+#     colsample_bytree=0.8,
+#     random_state=42
+# )
 
-model.fit(X_train, y_train)
+# model.fit(X_train, y_train)
 
-# Predicción
-pred_xgbr=model.predict(X_test)
+# # Predicción
+# pred_xgbr=model.predict(X_test)
 
-# Evaluación
-mae_xgbr = mean_absolute_error(y_test, pred_xgbr)
-error_pct_xgbr = mae_xgbr / y_test.mean()
+# # Evaluación
+# mae_xgbr = mean_absolute_error(y_test, pred_xgbr)
+# error_pct_xgbr = mae_xgbr / y_test.mean()
 
-print("XGBR Error %:", error_pct_xgbr)
-print("XGBR MAE:", mae_xgbr)
+# print("XGBR Error %:", error_pct_xgbr)
+# print("XGBR MAE:", mae_xgbr)
 
-# %%
-plt.figure(figsize=(14,6))
+# # %%
+# plt.figure(figsize=(14,6))
 
-# Histórico (train)
-plt.plot(train["semana_fecha"], train["y"], label="Train", color="blue")
-# Real (test)
-plt.plot(test["semana_fecha"], y_test, label="Real", color="black")
-# Predicción
-plt.plot(test["semana_fecha"], pred_rf, label="RandomForest", color="red")
-plt.plot(test["semana_fecha"], pred_xgbr, label="XGBoost", color="orange", linestyle="--")
-plt.legend()
-plt.title(f"Forecast - Producto {prod} - WH {alm}")
-plt.xlabel("Semana")
-plt.ylabel("Ventas")
-plt.xticks(rotation=45)
-plt.show()
+# # Histórico (train)
+# plt.plot(train["semana_fecha"], train["y"], label="Train", color="blue")
+# # Real (test)
+# plt.plot(test["semana_fecha"], y_test, label="Real", color="black")
+# # Predicción
+# plt.plot(test["semana_fecha"], pred_rf, label="RandomForest", color="red")
+# plt.plot(test["semana_fecha"], pred_xgbr, label="XGBoost", color="orange", linestyle="--")
+# plt.legend()
+# plt.title(f"Forecast - Producto {prod} - WH {alm}")
+# plt.xlabel("Semana")
+# plt.ylabel("Ventas")
+# plt.xticks(rotation=45)
+# plt.show()
