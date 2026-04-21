@@ -4,9 +4,13 @@ from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
 from sklearn.metrics import mean_absolute_error
 
-df_prod=pd.read_excel(r"C:\Users\ftovar\OneDrive - ELECTRICA A-B SA DE CV\Escritorio\Proyecto CD\BD productos.xlsx")
-df_mov=pd.read_excel(r"C:\Users\ftovar\OneDrive - ELECTRICA A-B SA DE CV\Escritorio\Proyecto CD\BD movimientos.xlsx")
-df_inv=pd.read_excel(r"C:\Users\ftovar\OneDrive - ELECTRICA A-B SA DE CV\Escritorio\Proyecto CD\BD inventario.xlsx")
+# Ruta relativa — funciona para cualquiera que clone el repo
+BASE = os.path.dirname(os.path.abspath(__file__))
+
+# ── Leer Excel desde data inicial/ ───────────
+df_prod = pd.read_excel(os.path.join(BASE, "data inicial", "BD productos.xlsx"))
+df_mov  = pd.read_excel(os.path.join(BASE, "data inicial", "BD movimientos.xlsx"))
+df_inv  = pd.read_excel(os.path.join(BASE, "data inicial", "BD inventario.xlsx"))
 
 # %%
 # Limpieza y estructuración de modelo productos
