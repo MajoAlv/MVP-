@@ -51,8 +51,11 @@ df_ultima_venta = df_vta_prod.groupby("product_id", as_index=False).agg(
 
 # Conteo de frecuencias y generación df rotación
 df_rot=df_vta_24.groupby("product_id", as_index=False).agg(
-    semanas_con_venta=("semana_fecha", "nunique")
+    semanas_con_venta=("semana_fecha", "nunique"),
+    ventas_totales=("ventas", "sum")
 )
+
+df_rot['avg_semanal'] = (df_rot['ventas_totales'] / 24).round(1)
 
 def clasificar_rotacion(semanas):
     if semanas >= 11:
@@ -98,6 +101,7 @@ df_rotation['semanas_con_venta'] = df_rotation['semanas_con_venta'].fillna(0)
 df_rotation['ultima_venta'] = df_rotation['ultima_venta'].fillna(pd.NaT)
 df_rotation['default_code'] = df_rotation['default_code'].fillna('REVISAR')
 df_rotation['description'] = df_rotation['description'].fillna('REVISAR')
+df_rotation['avg_semanal'] = df_rotation['semanas_con_venta'].fillna(0)
 
 df_rotation = df_rotation.rename(columns={
     'default_code': 'code',
@@ -105,6 +109,7 @@ df_rotation = df_rotation.rename(columns={
     'on_hand': 'stock'
 })
 
+df_rotation.info()
 df_rotation.to_csv('data/rotation.csv', index=False)
 # %%
 df_rotation.info()
@@ -264,10 +269,3 @@ df_rotation.info()
 # plt.ylabel("Ventas")
 # plt.xticks(rotation=45)
 # plt.show()
-# %%
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-subprocess.run(['git', 'add', '.'])
-subprocess.run(['git', 'commit', '-m', 'auto: actualización de datos'])
-subprocess.run(['git', 'push', 'origin', 'main'])
-
-print("✅ Push exitoso")
