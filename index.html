@@ -736,14 +736,7 @@ const warehouseData = [
   { code: '#SKU-6614', desc: 'Alloy Steel Plate 4mm', avg: '55 un.', stock: 3200, status: 'instock' },
 ];
 
-const rotationData = [
-  { code: 'ITM-8921-X', desc: 'Steel Bearing Assembly - 40mm', avg: 1452, date: 'Hoy', cls: 'high', stock: 4200, action: 'OPTIMIZAR REORDEN', arrow: 'arrow_forward' },
-  { code: 'ITM-0045-A', desc: 'Hydraulic Valve Gasket (Silicone)', avg: 412, date: 'Ayer', cls: 'medium', stock: 1150, action: 'MONITOREAR', arrow: 'trending_flat' },
-  { code: 'ITM-7712-B', desc: 'Copper Wiring Harness - Custom', avg: 12, date: '14 Sep', cls: 'low', stock: 8400, action: 'REVISAR LIQUIDACIÓN', arrow: 'priority_high' },
-  { code: 'ITM-1299-K', desc: 'Thermal Compound Paste - 50g', avg: 2190, date: 'Ahora', cls: 'high', stock: 310, action: 'RESTOCK URGENTE', arrow: 'bolt' },
-  { code: 'ITM-5532-Z', desc: 'Titanium Fastener M8 (Bulk)', avg: 678, date: 'Ayer', cls: 'high', stock: 12000, action: 'ESTABLE', arrow: 'check_circle' },
-  { code: 'ITM-3301-C', desc: 'Aluminum Sheet 2mm', avg: 5, date: '64 días atrás', cls: 'dead', stock: 1200, action: 'LIQUIDAR', arrow: 'warning' },
-];
+let rotationData = [];
 
 const statusMap = {
   instock: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">En Stock</span>',
@@ -758,6 +751,61 @@ const clsMap = {
 };
 const actionColor = { high: 'text-primary', medium: 'text-on-surface-variant opacity-70', low: 'text-tertiary', dead: 'text-error' };
 
+const actionMap = {
+  high:   { label: 'OPTIMIZAR REORDEN',  icon: 'arrow_forward' },
+  medium: { label: 'MONITOREAR',          icon: 'trending_flat' },
+  low:    { label: 'REVISAR LIQUIDACIÓN', icon: 'priority_high' },
+  dead:   { label: 'LIQUIDAR',            icon: 'warning' },
+};
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.replace(/"/g, '').trim());
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = vals[i]);
+    obj.stock = parseFloat(obj.stock) || 0;
+    obj.avg_semanal = parseFloat(obj.avg_semanal) || 0;
+    return obj;
+  });
+}
+
+function formatDate(dateStr) {
+  if (!dateStr || dateStr === 'NaT' || dateStr === '' || dateStr === 'nan') return 'Sin registro';
+  const date = new Date(dateStr);
+  if (isNaN(date)) return 'Sin registro';
+  const today = new Date();
+  const diff = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return 'Hoy';
+  if (diff === 1) return 'Ayer';
+  if (diff > 60) return `${diff} días sin venta`;
+  return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+}
+
+async function loadRotationData() {
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/MajoAlv/MVP-/main/data/rotation.csv');
+    const text = await res.text();
+    rotationData = parseCSV(text);
+    rotData = [...rotationData];
+    renderRotationTable();
+    updateRotationKPIs();
+  } catch(e) {
+    console.error('Error cargando rotation.csv:', e);
+  }
+}
+
+function updateRotationKPIs() {
+  const high   = rotationData.filter(r => r.cls === 'high').length;
+  const medium = rotationData.filter(r => r.cls === 'medium').length;
+  const low    = rotationData.filter(r => r.cls === 'low').length;
+  const cards  = document.querySelectorAll('#page-rotation .kpi-card p.text-3xl');
+  if (cards[0]) cards[0].textContent = high.toLocaleString('es-MX');
+  if (cards[1]) cards[1].textContent = medium.toLocaleString('es-MX');
+  if (cards[2]) cards[2].textContent = low.toLocaleString('es-MX');
+}  
+  
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
@@ -765,7 +813,7 @@ let currentPage = 'dashboard';
 let whPage = 0;
 const WH_PER_PAGE = 5;
 let whData = [...warehouseData];
-let rotData = [...rotationData];
+let rotData = [];
 let rotFilter = 'all';
 
 // ═══════════════════════════════════════════════
@@ -888,22 +936,29 @@ function warehousePage(dir) {
 function renderRotationTable() {
   const tbody = document.getElementById('rotation-table');
   if (!tbody) return;
-  tbody.innerHTML = rotData.map(r => `
-    <tr class="hover:bg-surface-container-low/50 transition-colors">
-      <td class="px-6 py-4 font-mono text-sm font-bold text-primary">${r.code}</td>
-      <td class="px-6 py-4 text-sm font-medium">${r.desc}</td>
-      <td class="px-6 py-4 text-sm font-semibold">${r.avg.toLocaleString()}</td>
-      <td class="px-6 py-4 text-sm text-on-surface-variant">${r.date}</td>
-      <td class="px-6 py-4">${clsMap[r.cls] || ''}</td>
-      <td class="px-6 py-4 text-sm font-bold text-right ${r.cls==='low'||r.cls==='dead'?'text-error':''}">${r.stock.toLocaleString()}</td>
-      <td class="px-6 py-4">
-        <button class="text-[11px] font-bold ${actionColor[r.cls]} hover:underline underline-offset-4 flex items-center gap-1 whitespace-nowrap">
-          ${r.action} <span class="material-symbols-outlined text-[14px]">${r.arrow}</span>
-        </button>
-      </td>
-    </tr>
-  `).join('');
-  document.getElementById('rotation-count').textContent = `Mostrando ${rotData.length} de 12,482`;
+  if (rotData.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-sm text-on-surface-variant">Cargando datos...</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rotData.map(r => {
+    const action = actionMap[r.cls] || { label: '-', icon: 'help' };
+    return `
+      <tr class="hover:bg-surface-container-low/50 transition-colors">
+        <td class="px-6 py-4 font-mono text-sm font-bold text-primary">${r.code || '-'}</td>
+        <td class="px-6 py-4 text-sm font-medium">${r.desc || '-'}</td>
+        <td class="px-6 py-4 text-sm font-semibold">${Number(r.avg_semanal).toLocaleString('es-MX', {maximumFractionDigits:1})}</td>
+        <td class="px-6 py-4 text-sm text-on-surface-variant">${formatDate(r.ultima_venta)}</td>
+        <td class="px-6 py-4">${clsMap[r.cls] || ''}</td>
+        <td class="px-6 py-4 text-sm font-bold text-right ${r.cls==='low'||r.cls==='dead'?'text-error':''}">${Number(r.stock).toLocaleString('es-MX')}</td>
+        <td class="px-6 py-4">
+          <button class="text-[11px] font-bold ${actionColor[r.cls]} hover:underline underline-offset-4 flex items-center gap-1 whitespace-nowrap">
+            ${action.label} <span class="material-symbols-outlined text-[14px]">${action.icon}</span>
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+  document.getElementById('rotation-count').textContent =
+    `Mostrando ${rotData.length.toLocaleString('es-MX')} de ${rotationData.length.toLocaleString('es-MX')}`;
 }
 
 function setRotationFilter(cls, btn) {
@@ -1003,7 +1058,7 @@ function toggleFilter(el) {
 window.addEventListener('DOMContentLoaded', () => {
   drawForecastChart();
   renderWarehouseTable();
-  renderRotationTable();
+  loadRotationData();
 });
 </script>
 </body>
