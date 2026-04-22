@@ -806,6 +806,7 @@ async function loadForecastData() {
     forecastData = parseCSV(text);
     forecastData.forEach(r => {
       r.valor = parseFloat(r.valor) || 0;
+      r.product_id = parseInt(r.product_id) || 0;
     });
   } catch(e) {
     console.error('Error cargando forecast_chart.csv:', e);
@@ -828,8 +829,8 @@ function filterForecast(q) {
       '<p class="text-sm text-on-surface-variant m-auto">No se encontró el producto.</p>';
     return;
   }
-  const pid = producto.product_id;
-  const datos = forecastData.filter(r => r.product_id === pid).sort((a,b) => new Date(a.semana_fecha) - new Date(b.semana_fecha));
+  const pid = parseInt(producto.product_id);
+  const datos = forecastData.filter(r => parseInt(r.product_id) === pid).sort((a,b) => new Date(a.semana_fecha) - new Date(b.semana_fecha));
   const historico = datos.filter(r => r.tipo === 'historico');
   const forecast  = datos.filter(r => r.tipo === 'forecast');
   const modelo = forecast[0]?.modelo || '';
