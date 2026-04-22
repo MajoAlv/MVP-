@@ -448,12 +448,13 @@ tailwind.config = {
       <div class="bg-white rounded-2xl p-6 border border-outline-variant/10">
         <div class="flex justify-between items-center mb-6">
           <div>
-            <h3 class="font-bold font-headline text-on-surface">Proyección de Demanda</h3>
-            <p class="text-xs text-on-surface-variant">52 semanas históricas vs proyección 4 semanas</p>
+            <h3 class="font-bold font-headline text-on-surface" id="forecast-product-title">Busca un producto para ver su proyección</h3>
+<p class="text-xs text-on-surface-variant">13 semanas históricas vs proyección 4 semanas</p>
           </div>
-          <div class="flex gap-4 text-xs font-bold">
+          <div class="flex gap-4 text-xs font-bold items-center">
             <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-primary inline-block"></span>Histórico</span>
             <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full border-2 border-dashed border-primary inline-block"></span>Forecast</span>
+            <span id="forecast-model-badge" class="hidden px-2 py-1 bg-primary-fixed text-on-primary-fixed-variant text-[10px] font-black uppercase rounded tracking-wider"></span>
           </div>
         </div>
         <div class="h-64 relative flex items-end gap-1 px-2" id="forecast-bars">
@@ -738,6 +739,7 @@ const warehouseData = [
 ];
 
 let rotationData = [];
+let forecastData = [];
 
 const statusMap = {
   instock: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">En Stock</span>',
@@ -797,6 +799,71 @@ async function loadRotationData() {
   }
 }
 
+async function loadForecastData() {
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/MajoAlv/MVP-/main/data/forecast_chart.csv');
+    const text = await res.text();
+    forecastData = parseCSV(text);
+    forecastData.forEach(r => {
+      r.valor = parseFloat(r.valor) || 0;
+    });
+  } catch(e) {
+    console.error('Error cargando forecast_chart.csv:', e);
+  }
+}
+
+function filterForecast(q) {
+  if (!q || q.trim() === '') {
+    document.getElementById('forecast-bars').innerHTML = '';
+    document.getElementById('forecast-model-badge').classList.add('hidden');
+    return;
+  }
+  const ql = q.toLowerCase();
+  const producto = forecastData.find(r =>
+    (r.code || '').toLowerCase().includes(ql) ||
+    (r.desc || '').toLowerCase().includes(ql)
+  );
+  if (!producto) {
+    document.getElementById('forecast-bars').innerHTML = 
+      '<p class="text-sm text-on-surface-variant m-auto">No se encontró el producto.</p>';
+    return;
+  }
+  const pid = producto.product_id;
+  const datos = forecastData.filter(r => r.product_id === pid).sort((a,b) => new Date(a.semana_fecha) - new Date(b.semana_fecha));
+  const historico = datos.filter(r => r.tipo === 'historico');
+  const forecast  = datos.filter(r => r.tipo === 'forecast');
+  const modelo = forecast[0]?.modelo || '';
+
+  // Badge del modelo
+  const badge = document.getElementById('forecast-model-badge');
+  badge.textContent = `Modelo: ${modelo}`;
+  badge.classList.remove('hidden');
+
+  // Título del producto
+  document.getElementById('forecast-product-title').textContent = `${producto.code} — ${producto.desc}`;
+
+  // Gráfica
+  const maxVal = Math.max(...datos.map(r => r.valor), 1);
+  const el = document.getElementById('forecast-bars');
+  el.innerHTML = [
+    ...historico.map(r => `
+      <div class="flex-1 flex flex-col items-center gap-1 has-tooltip relative">
+        <div class="tooltip-box">${r.valor} un.</div>
+        <div class="w-full chart-bar bg-primary/25 hover:bg-primary/60 rounded-t-lg transition-colors" style="height:0%" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
+      </div>`),
+    ...forecast.map(r => `
+      <div class="flex-1 flex flex-col items-center gap-1 has-tooltip relative">
+        <div class="tooltip-box">${r.valor} un. (forecast)</div>
+        <div class="w-full chart-bar bg-primary/15 border-2 border-dashed border-primary/50 rounded-t-lg transition-colors" style="height:0%" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
+      </div>`)
+  ].join('');
+  requestAnimationFrame(() => {
+    el.querySelectorAll('.chart-bar').forEach((b, i) => {
+      setTimeout(() => { b.style.height = b.dataset.h; }, i * 50);
+    });
+  });
+}
+  
 function updateRotationKPIs() {
   const high   = rotationData.filter(r => r.cls === 'A').length;
   const medium = rotationData.filter(r => r.cls === 'B').length;
@@ -842,7 +909,10 @@ function showPage(name) {
   closeSidebar();
   // Trigger animations
   if (name === 'dashboard') drawForecastChart();
-  if (name === 'forecast') drawForecastBars();
+  if (name === 'forecast') {
+    const q = document.getElementById('forecastSearch').value;
+    if (!q || q.trim() === '') drawForecastBars();
+  }
   if (name === 'warehouse') renderWarehouseTable();
   if (name === 'rotation') renderRotationTable();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1105,6 +1175,7 @@ window.addEventListener('DOMContentLoaded', () => {
   drawForecastChart();
   renderWarehouseTable();
   loadRotationData();
+  loadForecastData();
 });
 </script>
 </body>
