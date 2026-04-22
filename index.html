@@ -609,9 +609,10 @@ tailwind.config = {
             <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Clase</label>
             <div class="flex gap-1" id="rotation-filter-btns">
               <button onclick="setRotationFilter('all',this)" class="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-bold transition-colors">Todo</button>
-              <button onclick="setRotationFilter('high',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">Alto</button>
-              <button onclick="setRotationFilter('medium',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">Medio</button>
-              <button onclick="setRotationFilter('low',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">Bajo</button>
+              <button onclick="setRotationFilter('A',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">A</button>
+              <button onclick="setRotationFilter('B',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">B</button>
+              <button onclick="setRotationFilter('C',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">C</button>
+              <button onclick="setRotationFilter('D',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">D</button>
             </div>
           </div>
         </div>
@@ -744,18 +745,18 @@ const statusMap = {
   critical: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-error-container text-error">Crítico</span>',
 };
 const clsMap = {
-  high: '<span class="px-2 py-1 bg-primary-fixed text-on-primary-fixed-variant text-[10px] font-black uppercase rounded tracking-wider">Alto</span>',
-  medium: '<span class="px-2 py-1 bg-secondary-container text-on-secondary-container text-[10px] font-black uppercase rounded tracking-wider">Medio</span>',
-  low: '<span class="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-black uppercase rounded tracking-wider">Bajo</span>',
-  dead: '<span class="px-2 py-1 bg-error-container text-error text-[10px] font-black uppercase rounded tracking-wider">Muerto</span>',
+  A: '<span class="px-2 py-1 bg-primary-fixed text-on-primary-fixed-variant text-[10px] font-black uppercase rounded tracking-wider">Alto</span>',
+  B: '<span class="px-2 py-1 bg-secondary-container text-on-secondary-container text-[10px] font-black uppercase rounded tracking-wider">Medio</span>',
+  C: '<span class="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-black uppercase rounded tracking-wider">Bajo</span>',
+  D: '<span class="px-2 py-1 bg-error-container text-error text-[10px] font-black uppercase rounded tracking-wider">Muerto</span>',
 };
-const actionColor = { high: 'text-primary', medium: 'text-on-surface-variant opacity-70', low: 'text-tertiary', dead: 'text-error' };
+const actionColor = { A: 'text-primary', B: 'text-on-surface-variant opacity-70', C: 'text-tertiary', D: 'text-error' };
 
 const actionMap = {
-  high:   { label: 'OPTIMIZAR REORDEN',  icon: 'arrow_forward' },
-  medium: { label: 'MONITOREAR',          icon: 'trending_flat' },
-  low:    { label: 'REVISAR LIQUIDACIÓN', icon: 'priority_high' },
-  dead:   { label: 'LIQUIDAR',            icon: 'warning' },
+  A: { label: 'OPTIMIZAR REORDEN',  icon: 'arrow_forward' },
+  B: { label: 'MONITOREAR',          icon: 'trending_flat' },
+  C: { label: 'REVISAR LIQUIDACIÓN', icon: 'priority_high' },
+  D: { label: 'LIQUIDAR',            icon: 'warning' },
 };
 
 function parseCSV(text) {
@@ -797,14 +798,16 @@ async function loadRotationData() {
 }
 
 function updateRotationKPIs() {
-  const high   = rotationData.filter(r => r.cls === 'high').length;
-  const medium = rotationData.filter(r => r.cls === 'medium').length;
-  const low    = rotationData.filter(r => r.cls === 'low').length;
+  const high   = rotationData.filter(r => r.cls === 'A').length;
+  const medium = rotationData.filter(r => r.cls === 'B').length;
+  const low    = rotationData.filter(r => r.cls === 'C').length;
+  const dead   = rotationData.filter(r => r.cls === 'D').length;
   const cards  = document.querySelectorAll('#page-rotation .kpi-card p.text-3xl');
   if (cards[0]) cards[0].textContent = high.toLocaleString('es-MX');
   if (cards[1]) cards[1].textContent = medium.toLocaleString('es-MX');
   if (cards[2]) cards[2].textContent = low.toLocaleString('es-MX');
-}  
+  if (cards[3]) cards[3].textContent = dead.toLocaleString('es-MX');
+}
   
 // ═══════════════════════════════════════════════
 // STATE
@@ -952,7 +955,7 @@ function renderRotationTable() {
         <td class="px-6 py-4 text-sm font-semibold">${Number(r.avg_semanal).toLocaleString('es-MX', {maximumFractionDigits:1})}</td>
         <td class="px-6 py-4 text-sm text-on-surface-variant">${formatDate(r.ultima_venta)}</td>
         <td class="px-6 py-4">${clsMap[r.cls] || ''}</td>
-        <td class="px-6 py-4 text-sm font-bold text-right ${r.cls==='low'||r.cls==='dead'?'text-error':''}">${Number(r.stock).toLocaleString('es-MX')}</td>
+        <td class="px-6 py-4 text-sm font-bold text-right ${r.cls==='C'||r.cls==='D'?'text-error':''}">${Number(r.stock).toLocaleString('es-MX')}</td>
         <td class="px-6 py-4">
           <button class="text-[11px] font-bold ${actionColor[r.cls]} hover:underline underline-offset-4 flex items-center gap-1 whitespace-nowrap">
             ${action.label} <span class="material-symbols-outlined text-[14px]">${action.icon}</span>
