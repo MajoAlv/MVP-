@@ -83,7 +83,7 @@ df_rotation['cls'] = df_rotation['cls'].fillna('D')
 
 # Filtrar: todos los que tienen stock + los high/medium sin stock
 df_rotation = df_rotation[
-    (df_rotation['on_hand'] > 0) |
+    (df_rotation['on_hand'] > 0.5) |
     (df_rotation['cls'].isin(['A', 'B']))
 ]
 
