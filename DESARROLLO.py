@@ -167,116 +167,128 @@ def crear_features(df_producto):
     df = df.dropna()
     return df
 
-def pipeline_forecast(df_vta_fore, n_test=8, n_forecast=4):
+def procesar_producto(pid, df_vta_fore, n_test=8, n_forecast=4):
+    features = ['ewm_4', 'ewm_8', 'ewm_16', 'rolling_4', 'rolling_8', 
+                'clientes_unicos', 'semana_año', 'mes']
+    
+    df_p = df_vta_fore[df_vta_fore['product_id'] == pid].sort_values('semana_fecha')
+    serie = df_p['ventas'].values
+    fechas = df_p['semana_fecha'].values
+    
+    if len(serie) < n_test + 10:
+        return []
+    
+    train = serie[:-n_test]
+    test  = serie[-n_test:]
+    modelos = {}
+
+    # ── 1. Promedio móvil simple ──────────────
+    try:
+        pred_ma = np.full(n_test, train[-4:].mean())
+        modelos['MA'] = mean_squared_error(test, pred_ma)
+    except:
+        modelos['MA'] = np.inf
+
+    # ── 2. EWM ───────────────────────────────
+    try:
+        ewm = pd.Series(train).ewm(span=8, adjust=False).mean()
+        pred_ewm = np.full(n_test, ewm.iloc[-1])
+        modelos['EWM'] = mean_squared_error(test, pred_ewm)
+    except:
+        modelos['EWM'] = np.inf
+
+    # ── 3. Holt-Winters ───────────────────────
+    try:
+        hw = ExponentialSmoothing(train, trend='add', seasonal='add', seasonal_periods=13).fit()
+        pred_hw = hw.forecast(n_test)
+        modelos['HW'] = mean_squared_error(test, pred_hw)
+    except:
+        modelos['HW'] = np.inf
+
+    # ── 4. ARIMA ─────────────────────────────
+    try:
+        arima = auto_arima(
+            train, seasonal=False, suppress_warnings=True, error_action='ignore',
+            max_p=3, max_q=3, max_d=1, stepwise=True
+        )
+        pred_arima = arima.predict(n_periods=n_test)
+        modelos['ARIMA'] = mean_squared_error(test, pred_arima)
+    except:
+        modelos['ARIMA'] = np.inf
+
+    # ── 5. XGBoost ───────────────────────────
+    try:
+        df_feat = crear_features(df_p)
+        X = df_feat[features]
+        y = df_feat['ventas']
+        X_train = X.iloc[:-n_test]
+        y_train = y.iloc[:-n_test]
+        X_test  = X.iloc[-n_test:]
+        y_test  = y.iloc[-n_test:]
+        xgb = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
+        xgb.fit(X_train, y_train)
+        pred_xgb = xgb.predict(X_test)
+        modelos['XGB'] = mean_squared_error(y_test, pred_xgb)
+    except:
+        modelos['XGB'] = np.inf
+
+    # ── Mejor modelo ─────────────────────────
+    mejor = min(modelos, key=modelos.get)
+
+    # ── Forecast 4 semanas ───────────────────
+    try:
+        if mejor == 'MA':
+            forecast = np.full(n_forecast, serie[-4:].mean())
+        elif mejor == 'EWM':
+            forecast = np.full(n_forecast, pd.Series(serie).ewm(span=8, adjust=False).mean().iloc[-1])
+        elif mejor == 'HW':
+            hw_full = ExponentialSmoothing(serie, trend='add', seasonal='add', seasonal_periods=13).fit()
+            forecast = hw_full.forecast(n_forecast)
+        elif mejor == 'ARIMA':
+            arima_full = auto_arima(
+                serie, seasonal=False, suppress_warnings=True, error_action='ignore',
+                max_p=3, max_q=3, max_d=1, stepwise=True
+            )
+            forecast = arima_full.predict(n_periods=n_forecast)
+        elif mejor == 'XGB':
+            df_feat_full = crear_features(df_p)
+            xgb_full = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
+            xgb_full.fit(df_feat_full[features], df_feat_full['ventas'])
+            last_row = df_feat_full[features].iloc[[-1]]
+            forecast = []
+            for _ in range(n_forecast):
+                pred = xgb_full.predict(last_row)[0]
+                forecast.append(pred)
+    except:
+        forecast = np.full(n_forecast, serie[-4:].mean())
+
+    # ── Guardar resultados ───────────────────
+    ultima_fecha = pd.Timestamp(fechas[-1])
     resultados = []
+    for i, f in enumerate(forecast):
+        resultados.append({
+            'product_id': pid,
+            'semana_fecha': ultima_fecha + pd.Timedelta(weeks=i+1),
+            'forecast': max(0, round(f, 1)),
+            'modelo': mejor,
+            'mse': round(modelos[mejor], 2)
+        })
+    return resultados
+
+from joblib import Parallel, delayed
+
+def pipeline_forecast(df_vta_fore, n_test=8, n_forecast=4):
     productos = df_vta_fore['product_id'].unique()
     
-    for pid in tqdm(productos, desc='Procesando productos', unit='producto'):
-        df_p = df_vta_fore[df_vta_fore['product_id'] == pid].sort_values('semana_fecha')
-        serie = df_p['ventas'].values
-        fechas = df_p['semana_fecha'].values
-        
-        if len(serie) < n_test + 10:
-            continue
-        
-        train = serie[:-n_test]
-        test  = serie[-n_test:]
-        
-        modelos = {}
-        
-        # ── 1. Promedio móvil simple ──────────────
-        try:
-            pred_ma = np.full(n_test, train[-4:].mean())
-            modelos['MA'] = mean_squared_error(test, pred_ma)
-        except:
-            modelos['MA'] = np.inf
+    resultados = Parallel(n_jobs=6)(
+        delayed(procesar_producto)(pid, df_vta_fore, n_test, n_forecast)
+        for pid in tqdm(productos, desc='Procesando productos', unit='producto')
+    )
+    
+    # Aplanar lista de listas
+    resultados_flat = [r for sublist in resultados for r in sublist]
+    return pd.DataFrame(resultados_flat)
 
-        # ── 2. EWM ───────────────────────────────
-        try:
-            ewm = pd.Series(train).ewm(span=8, adjust=False).mean()
-            pred_ewm = np.full(n_test, ewm.iloc[-1])
-            modelos['EWM'] = mean_squared_error(test, pred_ewm)
-        except:
-            modelos['EWM'] = np.inf
-
-        # ── 3. Holt-Winters ───────────────────────
-        try:
-            hw = ExponentialSmoothing(train, trend='add', seasonal='add', seasonal_periods=13).fit()
-            pred_hw = hw.forecast(n_test)
-            modelos['HW'] = mean_squared_error(test, pred_hw)
-        except:
-            modelos['HW'] = np.inf
-
-        # ── 4. ARIMA ─────────────────────────────
-        try:
-            arima = auto_arima(train,seasonal=False,suppress_warnings=True,error_action='ignore',
-                max_p=3,
-                max_q=3,
-                max_d=1,
-                stepwise=True
-            )
-            pred_arima = arima.predict(n_periods=n_test)
-            modelos['ARIMA'] = mean_squared_error(test, pred_arima)
-        except:
-            modelos['ARIMA'] = np.inf
-
-        # ── 5. XGBoost ───────────────────────────
-        try:
-            df_feat = crear_features(df_p)
-            features = ['ewm_4', 'ewm_8', 'ewm_16', 'rolling_4', 'rolling_8', 'clientes_unicos', 'semana_año', 'mes']
-            X = df_feat[features]
-            y = df_feat['ventas']
-            X_train = X.iloc[:-n_test]
-            y_train = y.iloc[:-n_test]
-            X_test  = X.iloc[-n_test:]
-            y_test  = y.iloc[-n_test:]
-            xgb = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
-            xgb.fit(X_train, y_train)
-            pred_xgb = xgb.predict(X_test)
-            modelos['XGB'] = mean_squared_error(y_test, pred_xgb)
-        except:
-            modelos['XGB'] = np.inf
-
-        # ── Mejor modelo ─────────────────────────
-        mejor = min(modelos, key=modelos.get)
-
-        # ── Forecast 4 semanas ───────────────────
-        try:
-            if mejor == 'MA':
-                forecast = np.full(n_forecast, serie[-4:].mean())
-            elif mejor == 'EWM':
-                forecast = np.full(n_forecast, pd.Series(serie).ewm(span=8, adjust=False).mean().iloc[-1])
-            elif mejor == 'HW':
-                hw_full = ExponentialSmoothing(serie, trend='add', seasonal='add', seasonal_periods=13).fit()
-                forecast = hw_full.forecast(n_forecast)
-            elif mejor == 'ARIMA':
-                arima_full = auto_arima(serie, seasonal=False, suppress_warnings=True, error_action='ignore')
-                forecast = arima_full.predict(n_periods=n_forecast)
-            elif mejor == 'XGB':
-                df_feat_full = crear_features(df_p)
-                xgb_full = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
-                xgb_full.fit(df_feat_full[features], df_feat_full['ventas'])
-                last_row = df_feat_full[features].iloc[[-1]]
-                forecast = []
-                for _ in range(n_forecast):
-                    pred = xgb_full.predict(last_row)[0]
-                    forecast.append(pred)
-        except:
-            forecast = np.full(n_forecast, serie[-4:].mean())
-
-        # ── Guardar resultados ───────────────────
-        ultima_fecha = pd.Timestamp(fechas[-1])
-        for i, f in enumerate(forecast):
-            resultados.append({
-                'product_id': pid,
-                'semana_fecha': ultima_fecha + pd.Timedelta(weeks=i+1),
-                'forecast': max(0, round(f, 1)),
-                'modelo': mejor,
-                'mse': round(modelos[mejor], 2)
-            })
-
-    return pd.DataFrame(resultados)
-#%%
 # Correr pipeline
 df_forecast = pipeline_forecast(df_vta_fore)
 print(df_forecast.head())
