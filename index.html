@@ -173,7 +173,7 @@ tailwind.config = {
     </button>
     <button onclick="showPage('rotation')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="rotation">
       <span class="material-symbols-outlined text-[20px]">low_priority</span>
-      <span>Rotation Class</span>
+      <span>Segmentación</span>
     </button>
 
     <div class="my-3 border-t border-outline-variant/20"></div>
@@ -566,8 +566,8 @@ tailwind.config = {
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Clasificación</p>
-          <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Rotation <span class="text-primary">Classification</span></h2>
-          <p class="text-sm text-on-surface-variant mt-1">Velocidad de stock y métricas de rotación por SKU</p>
+          <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Segmentación <span class="text-primary">Rotación</span></h2>
+          <p class="text-sm text-on-surface-variant mt-1">Visualizador general de estructura inventario por SKU</p>
         </div>
         <button onclick="exportCSV()" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-outline-variant/20 rounded-xl text-sm font-bold hover:bg-surface-container transition-all">
           <span class="material-symbols-outlined text-[16px]">ios_share</span> Export CSV
@@ -580,7 +580,7 @@ tailwind.config = {
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
           <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Alta Rotación</p>
           <p class="text-3xl font-bold font-headline">1,284</p>
-          <p class="text-xs font-bold text-emerald-600 mt-1">+12% — SKUs grado A</p>
+          <p class="text-xs font-bold text-emerald-600 mt-1">SKUs grado A</p>
         </div>
         <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
@@ -592,13 +592,13 @@ tailwind.config = {
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
           <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Baja Rotación</p>
           <p class="text-3xl font-bold font-headline">842</p>
-          <p class="text-xs font-bold text-error mt-1">Riesgo sobrestock</p>
+          <p class="text-xs font-bold text-error mt-1">SKUs grado C</p>
         </div>
         <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div>
-          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Stock Turn</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Nula Rotación</p>
           <p class="text-3xl font-bold font-headline">14.2</p>
-          <p class="text-xs font-bold text-primary mt-1">Objetivo cumplido</p>
+          <p class="text-xs font-bold text-primary mt-1">SKUs grado D</p>
         </div>
       </div>
 
@@ -716,7 +716,7 @@ tailwind.config = {
   </button>
   <button onclick="showPage('rotation')" class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-outline" id="mob-rotation">
     <span class="material-symbols-outlined text-[22px]">low_priority</span>
-    <span class="text-[9px] font-bold uppercase">Rotación</span>
+    <span class="text-[9px] font-bold uppercase">Segmentación</span>
   </button>
 </nav>
 
@@ -1013,8 +1013,11 @@ function setRotationFilter(cls, btn) {
 }
 
 function filterRotationSearch(q) {
-  const base = rotFilter === 'all' ? rotationData : rotationData.filter(r => r.cls === rotFilter);
-  rotData = q ? base.filter(r => r.code.toLowerCase().includes(q.toLowerCase()) || r.desc.toLowerCase().includes(q.toLowerCase())) : base;
+  const base = rotFilter === 'all' ? [...rotationData] : rotationData.filter(r => r.cls === rotFilter);
+  rotData = q && q.trim() !== '' ? base.filter(r =>
+    (r.code || '').toLowerCase().includes(q.toLowerCase()) ||
+    (r.desc || '').toLowerCase().includes(q.toLowerCase())
+  ) : base;
   rotPage = 0;
   renderRotationTable();
 }
