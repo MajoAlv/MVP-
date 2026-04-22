@@ -44,11 +44,13 @@ df_vta_prod=df_mov.groupby(
 df_mov['semana_fecha'] = pd.to_datetime(df_mov['semana_fecha'])
 fecha_corte = df_vta_prod['semana_fecha'].max() - pd.Timedelta(weeks=24)
 df_vta_24 = df_vta_prod[df_vta_prod['semana_fecha'] >= fecha_corte]
-
-# Conteo de frecuencias y generación df rotació
-df_rot=df_vta_24.groupby("product_id", as_index=False).agg(
-    semanas_con_venta=("semana_fecha", "nunique"),
+df_ultima_venta = df_vta_prod.groupby("product_id", as_index=False).agg(
     ultima_venta=("semana_fecha", "max")
+)
+
+# Conteo de frecuencias y generación df rotación
+df_rot=df_vta_24.groupby("product_id", as_index=False).agg(
+    semanas_con_venta=("semana_fecha", "nunique")
 )
 
 def clasificar_rotacion(semanas):
@@ -70,6 +72,7 @@ df_inv_consolidado = df_inv.groupby("product_id", as_index=False).agg(
 
 # Merge outer para no perder nada
 df_rotation = df_inv_consolidado.merge(df_rot, on="product_id", how="outer")
+df_rotation = df_rotation.merge(df_ultima_venta, on="product_id", how="left")
 
 # Llenar sin rotación como dead
 df_rotation['cls'] = df_rotation['cls'].fillna('D')
@@ -84,9 +87,26 @@ df_rotation = df_rotation[
 df_rotation['on_hand'] = df_rotation['on_hand'].fillna(0)
 df_rotation['reserved_quantity'] = df_rotation['reserved_quantity'].fillna(0)
 
-df_rotation
+df_rotation = df_rotation.merge(
+    df_prod[['product_id', 'default_code', 'description']],
+    on='product_id',
+    how='left'
+)
+
+df_rotation['semanas_con_venta'] = df_rotation['semanas_con_venta'].fillna(0)
+df_rotation['ultima_venta'] = df_rotation['ultima_venta'].fillna(pd.NaT)
+df_rotation['default_code'] = df_rotation['default_code'].fillna('REVISAR')
+df_rotation['description'] = df_rotation['description'].fillna('REVISAR')
+
+df_rotation = df_rotation.rename(columns={
+    'default_code': 'code',
+    'description': 'desc',
+    'on_hand': 'stock'
+})
+
+df_rotation.to_csv('data/rotation.csv', index=False)
 # %%
-df_prod.info()
+df_rotation.info()
 # # %%
 # # Solo se usa para ver el top productos con venta
 # freq_producto = df_alm_prod.groupby("product_id", as_index=False).agg(
