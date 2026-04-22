@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
 from sklearn.metrics import mean_absolute_error
 import os
+import subprocess
 
 #Prueba
 # Ruta relativa — funciona para cualquiera que clone el repo
@@ -263,3 +264,10 @@ df_rotation.info()
 # plt.ylabel("Ventas")
 # plt.xticks(rotation=45)
 # plt.show()
+# %%
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+subprocess.run(['git', 'add', '.'])
+subprocess.run(['git', 'commit', '-m', 'auto: actualización de datos'])
+subprocess.run(['git', 'push', 'origin', 'main'])
+
+print("✅ Push exitoso")
