@@ -150,11 +150,11 @@ tailwind.config = {
         <span class="material-symbols-outlined text-white text-[20px]" style="font-variation-settings:'FILL' 1,'wght' 600,'GRAD' 0,'opsz' 24">warehouse</span>
       </div>
       <div>
-        <p class="text-[11px] uppercase tracking-[.18em] font-bold text-primary leading-none font-headline">STOKA</p>
-        <p class="text-[15px] font-bold text-on-surface leading-tight font-headline">Inventory control</p>
+        <p class="text-[20px] uppercase tracking-[.18em] font-bold text-primary leading-none font-headline">STOKA</p>
+        <p class="text-[10px] font-bold text-on-surface leading-tight font-headline">Inventory control</p>
       </div>
     </div>
-    <p class="text-[10px] text-outline font-mono mt-3 tracking-widest uppercase">Inventory v4.2 · Live</p>
+    <p class="text-[10px] text-outline font-mono mt-3 tracking-widest uppercase">v1.0.0</p>
   </div>
 
   <!-- Nav -->
@@ -217,16 +217,6 @@ tailwind.config = {
       <div class="relative max-w-xs w-full hidden sm:block">
         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
         <input type="text" placeholder="Buscar SKU, producto..." class="w-full bg-surface-container-low border-none rounded-full pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white outline-none transition-all" id="searchInput" oninput="handleSearch(this.value)"/>
-      </div>
-      <!-- Warehouse selector -->
-      <div class="relative hidden md:block">
-        <select onchange="updateWarehouse(this.value)" id="warehouseSelect" class="bg-surface-container-low border border-outline-variant/30 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none appearance-none pr-8 cursor-pointer">
-          <option value="alpha">Warehouse Alpha</option>
-          <option value="north">North Hub</option>
-          <option value="south">Southern Depot</option>
-          <option value="east">Eastern Annex</option>
-        </select>
-        <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[16px]">expand_more</span>
       </div>
     </div>
     <div class="flex items-center gap-3">
@@ -616,12 +606,6 @@ tailwind.config = {
       <div class="bg-white rounded-2xl p-4 border border-outline-variant/10 flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex items-center gap-2">
-            <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Almacén</label>
-            <select id="rotationWarehouse" class="bg-surface-container-low border-none text-sm font-semibold text-primary rounded-xl px-3 py-1.5 outline-none cursor-pointer" onchange="filterRotation()">
-              <option>Central Distribution (DC-1)</option><option>North Regional (NR-4)</option><option>Western Hub (WH-2)</option>
-            </select>
-          </div>
-          <div class="flex items-center gap-2">
             <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Clase</label>
             <div class="flex gap-1" id="rotation-filter-btns">
               <button onclick="setRotationFilter('all',this)" class="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-bold transition-colors">Todo</button>
@@ -709,7 +693,7 @@ tailwind.config = {
   <footer class="px-8 py-4 border-t border-outline-variant/15 flex justify-between items-center text-[10px] font-bold text-outline uppercase tracking-widest bg-white/60">
     <div class="flex items-center gap-3">
       <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse"></span> Sistema Sync: Live</span>
-      <span class="hidden sm:inline">DB: WH-CENTRAL-01</span>
+      <span class="hidden sm:inline">DB: GRUPO-ABSA</span>
     </div>
     <span class="hidden sm:inline">STOKA © 2026 · v1.0.0</span>
   </footer>
