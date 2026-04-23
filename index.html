@@ -855,12 +855,12 @@ function filterForecast(q) {
     ...historico.map(r => `
       <div class="flex-1 flex flex-col items-center gap-1 has-tooltip relative">
         <div class="tooltip-box">${r.valor} un.</div>
-        <div class="w-full chart-bar bg-primary/25 hover:bg-primary/60 rounded-t-lg transition-colors" style="height:0%" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
+        <div class="w-full chart-bar rounded-t-lg transition-all" style="height:0%;background-color:#00346f;opacity:0.4" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
       </div>`),
     ...forecast.map(r => `
       <div class="flex-1 flex flex-col items-center gap-1 has-tooltip relative">
         <div class="tooltip-box">${r.valor} un. (forecast)</div>
-        <div class="w-full chart-bar bg-primary/15 border-2 border-dashed border-primary/50 rounded-t-lg transition-colors" style="height:0%" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
+        <div class="w-full chart-bar rounded-t-lg transition-all" style="height:0%;background-color:transparent;border:2px dashed #00346f;opacity:0.6" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
       </div>`)
   ].join('');
   setTimeout(() => {
