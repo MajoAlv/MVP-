@@ -479,6 +479,7 @@ tailwind.config = {
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">En Mano</th>
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Reservado</th>
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Disponible</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Utilización</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-outline-variant/10" id="forecast-stock-table">
@@ -854,12 +855,12 @@ function filterForecast(q) {
   el.innerHTML = [
     ...historico.map(r => `
       <div class="flex-1 flex flex-col-reverse items-end gap-1 has-tooltip relative" style="height:100%">
-        <div class="tooltip-box">${r.valor} un.</div>
+        <div class="tooltip-box">${Math.round(r.valor)} un.</div>
         <div class="w-full chart-bar rounded-t-lg transition-all" style="height:0%;background-color:#00346f;opacity:0.4;align-self:flex-end" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
       </div>`),
     ...forecast.map(r => `
       <div class="flex-1 flex flex-col-reverse items-end gap-1 has-tooltip relative" style="height:100%">
-        <div class="tooltip-box">${r.valor} un. (forecast)</div>
+        <div class="tooltip-box">${Math.round(r.valor)} un. (forecast)</div>
         <div class="w-full chart-bar rounded-t-lg transition-all" style="height:0%;background-color:transparent;border:2px dashed #00346f;opacity:0.6;align-self:flex-end" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
       </div>`)
   ].join('');
@@ -873,19 +874,28 @@ function filterForecast(q) {
     document.getElementById('forecast-multiple').textContent = '—';
   }
   
-  const stockProd = stockAlmacenData.filter(r => r.product_id === pid);
+  const stockProd = stockAlmacenData.filter(r => r.product_id === pid && r.on_hand > 0.05);
   const tablaEl = document.getElementById('forecast-stock-table');
   if (tablaEl) {
     if (stockProd.length === 0) {
       tablaEl.innerHTML = `<tr><td colspan="4" class="px-6 py-6 text-center text-sm text-on-surface-variant">Sin stock registrado</td></tr>`;
     } else {
-      tablaEl.innerHTML = stockProd.map(r => `
-        <tr class="hover:bg-surface-container-low/50">
-          <td class="px-6 py-4 text-sm font-bold">${r.almacen}</td>
-          <td class="px-6 py-4 text-sm">${Number(r.on_hand).toLocaleString('es-MX')}</td>
-          <td class="px-6 py-4 text-sm text-tertiary">${Number(r.reserved_quantity).toLocaleString('es-MX')}</td>
-          <td class="px-6 py-4 text-sm font-bold text-primary">${Number(r.on_hand - r.reserved_quantity).toLocaleString('es-MX')}</td>
-        </tr>`).join('');
+      tablaEl.innerHTML = stockProd.map(r => {
+        const utilizacion = r.on_hand > 0 ? Math.round((r.reserved_quantity / r.on_hand) * 100) : 0;
+        return `
+          <tr class="hover:bg-surface-container-low/50">
+            <td class="px-6 py-4 text-sm font-bold">${r.almacen}</td>
+            <td class="px-6 py-4 text-sm">${Math.round(r.on_hand).toLocaleString('es-MX')}</td>
+            <td class="px-6 py-4 text-sm text-tertiary">${Math.round(r.reserved_quantity).toLocaleString('es-MX')}</td>
+            <td class="px-6 py-4 text-sm font-bold text-primary">${Math.round(r.on_hand - r.reserved_quantity).toLocaleString('es-MX')}</td>
+            <td class="px-6 py-4 w-40">
+              <div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+                <div class="h-full rounded-full ${utilizacion > 80 ? 'bg-error' : 'bg-primary'}" style="width:${utilizacion}%"></div>
+              </div>
+              <p class="text-[10px] text-outline mt-1">${utilizacion}%</p>
+            </td>
+          </tr>`;
+      }).join('');
     }
   }
   setTimeout(() => {
