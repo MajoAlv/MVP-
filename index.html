@@ -683,6 +683,18 @@ tailwind.config = {
 // ═══════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════
+const warehouseData = [
+  { code: '#SKU-8921', desc: 'High-Temp Industrial Sealant G-12', avg: '452 un.', stock: 2140, status: 'instock' },
+  { code: '#SKU-3310', desc: 'Precision Ball Bearings (Set of 12)', avg: '388 un.', stock: 845, status: 'low' },
+  { code: '#SKU-1102', desc: 'Reinforced Titanium Mesh Panels', avg: '124 un.', stock: 12400, status: 'instock' },
+  { code: '#SKU-5541', desc: 'Synthetic Lubricant Type-X', avg: '98 un.', stock: 45, status: 'critical' },
+  { code: '#SKU-9908', desc: 'Galvanized Steel Conduit 20mm', avg: '82 un.', stock: 1200, status: 'instock' },
+  { code: '#SKU-4421', desc: 'Carbon Fiber Rods 10mm', avg: '75 un.', stock: 630, status: 'low' },
+  { code: '#SKU-2230', desc: 'Hydraulic Pump Assembly HPA-7', avg: '68 un.', stock: 4800, status: 'instock' },
+  { code: '#SKU-7712', desc: 'Copper Wiring Harness Custom', avg: '12 un.', stock: 8400, status: 'low' },
+  { code: '#SKU-0045', desc: 'Hydraulic Valve Gasket Silicone', avg: '412 un.', stock: 1150, status: 'instock' },
+  { code: '#SKU-6614', desc: 'Alloy Steel Plate 4mm', avg: '55 un.', stock: 3200, status: 'instock' },
+];
 
 let rotationData = [];
 let forecastData = [];
@@ -1011,6 +1023,9 @@ function updateRotationKPIs() {
 // STATE
 // ═══════════════════════════════════════════════
 let currentPage = 'dashboard';
+let whPage = 0;
+const WH_PER_PAGE = 5;
+let whData = [...warehouseData];
 let rotData = [];
 let rotFilter = 'all';
 let rotPage = 0;
@@ -1069,7 +1084,75 @@ function closeSidebar() {
   o.classList.add('opacity-0');
   setTimeout(() => o.classList.add('hidden'), 300);
 }
-  
+
+// ═══════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════
+const forecastValues = [40, 60, 55, 75, 45, 90, 65, 80, 50, 95];
+
+function drawForecastChart() {
+  const el = document.getElementById('forecast-chart');
+  if (!el) return;
+  el.innerHTML = forecastValues.map((v, i) => `
+    <div class="flex-1 flex flex-col items-center gap-2 has-tooltip relative">
+      <div class="tooltip-box">${(v * 400).toLocaleString()} un.</div>
+      <div class="w-full chart-bar bg-primary/20 rounded-t-lg hover:bg-primary/60 transition-colors" style="height:0%" data-h="${v}%"></div>
+    </div>
+  `).join('');
+  requestAnimationFrame(() => {
+    el.querySelectorAll('.chart-bar').forEach((b, i) => {
+      setTimeout(() => { b.style.height = b.dataset.h; }, i * 60);
+    });
+  });
+}
+
+function drawForecastBars() {
+  console.log('drawForecastBars llamado');
+  const el = document.getElementById('forecast-bars');
+  if (!el) return;
+  const vals = [30,45,60,50,75,55,70,90,80,95,70,60,50,40,30];
+  el.innerHTML = vals.map((v, i) => {
+    const isForecast = i >= 12;
+    return `
+      <div class="flex-1 flex flex-col items-center gap-2 has-tooltip relative">
+        <div class="tooltip-box">${v * 5} un.</div>
+        <div class="w-full chart-bar rounded-t-lg ${isForecast ? 'bg-primary/15 border-2 border-dashed border-primary/50' : 'bg-primary/25 hover:bg-primary/60'} transition-colors" style="height:0%" data-h="${v}%"></div>
+      </div>`;
+  }).join('');
+  requestAnimationFrame(() => {
+    el.querySelectorAll('.chart-bar').forEach((b, i) => {
+      setTimeout(() => { b.style.height = b.dataset.h; }, i * 50);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+// WAREHOUSE TABLE
+// ═══════════════════════════════════════════════
+function renderWarehouseTable() {
+  const tbody = document.getElementById('warehouse-table');
+  if (!tbody) return;
+  const start = whPage * WH_PER_PAGE;
+  const page = whData.slice(start, start + WH_PER_PAGE);
+  tbody.innerHTML = page.map(r => `
+    <tr class="hover:bg-surface-container-low/50 transition-colors cursor-default">
+      <td class="px-6 py-5 text-sm font-bold font-mono text-primary">${r.code}</td>
+      <td class="px-6 py-5 text-sm font-medium">${r.desc}</td>
+      <td class="px-6 py-5 text-sm text-on-surface-variant text-right">${r.avg}</td>
+      <td class="px-6 py-5 text-sm font-bold text-right">${r.stock.toLocaleString()}</td>
+      <td class="px-6 py-5">${statusMap[r.status]}</td>
+    </tr>
+  `).join('');
+  document.getElementById('wh-pagination-label').textContent = `Mostrando ${start+1}-${Math.min(start+WH_PER_PAGE, whData.length)} de ${whData.length}`;
+  document.getElementById('wh-page-btn').textContent = whPage + 1;
+}
+
+function warehousePage(dir) {
+  const maxPage = Math.ceil(whData.length / WH_PER_PAGE) - 1;
+  whPage = Math.max(0, Math.min(maxPage, whPage + dir));
+  renderWarehouseTable();
+}
+
 // ═══════════════════════════════════════════════
 // ROTATION TABLE
 // ═══════════════════════════════════════════════
@@ -1157,7 +1240,30 @@ function filterRotationSearch(q) {
   rotPage = 0;
   renderRotationTable();
 }
-  
+
+function filterRotation() { renderRotationTable(); }
+
+// ═══════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════
+function handleSearch(q) {
+  if (!q) return;
+  const ql = q.toLowerCase();
+  whData = warehouseData.filter(r => r.code.toLowerCase().includes(ql) || r.desc.toLowerCase().includes(ql));
+  if (currentPage === 'warehouse') { whPage = 0; renderWarehouseTable(); }
+  if (currentPage === 'rotation') filterRotationSearch(q);
+  if (whData.length > 0 && currentPage === 'dashboard') showPage('warehouse');
+}
+
+// ═══════════════════════════════════════════════
+// WAREHOUSE SELECTOR
+// ═══════════════════════════════════════════════
+function updateWarehouse(val) {
+  const names = { alpha: 'Alpha', north: 'North Hub', south: 'Southern Depot', east: 'Eastern Annex' };
+  const el = document.getElementById('wh-name');
+  if (el) el.textContent = names[val] || val;
+}
+
 // ═══════════════════════════════════════════════
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════
@@ -1193,6 +1299,21 @@ function setTheme(t, btn) {
     if (b !== btn) b.classList.replace('border-primary','border-outline-variant/30');
   });
   btn.classList.replace('border-outline-variant/30','border-primary');
+}
+
+// ═══════════════════════════════════════════════
+// FILTER TOGGLE (warehouse)
+// ═══════════════════════════════════════════════
+let filterState = 0;
+const filterLabels = ['Todas las categorías', 'En Stock', 'Stock Bajo', 'Crítico'];
+const filterKeys = [null, 'instock', 'low', 'critical'];
+function toggleFilter(el) {
+  filterState = (filterState + 1) % filterLabels.length;
+  document.getElementById('filter-label').textContent = filterLabels[filterState];
+  const key = filterKeys[filterState];
+  whData = key ? warehouseData.filter(r => r.status === key) : [...warehouseData];
+  whPage = 0;
+  renderWarehouseTable();
 }
 
 // ═══════════════════════════════════════════════
