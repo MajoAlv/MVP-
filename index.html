@@ -845,6 +845,10 @@ function filterForecast(q) {
 
   // Gráfica
   const maxVal = Math.max(...datos.map(r => r.valor), 1);
+  console.log('maxVal:', maxVal);
+  console.log('historico registros:', historico.length);
+  console.log('forecast registros:', forecast.length);
+  console.log('primer historico:', historico[0]);
   const el = document.getElementById('forecast-bars');
   el.innerHTML = [
     ...historico.map(r => `
