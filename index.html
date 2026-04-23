@@ -845,7 +845,9 @@ function filterForecast(q) {
   document.getElementById('forecast-product-title').textContent = `${producto.code} — ${producto.desc}`;
 
   // Gráfica
-  const maxVal = Math.max(...datos.map(r => r.valor), 1);
+  const valores = datos.map(r => r.valor).sort((a,b) => a - b);
+  const p95 = valores[Math.floor(valores.length * 0.95)] || 1;
+  const maxVal = Math.max(p95, 1);
   console.log('maxVal:', maxVal);
   console.log('historico registros:', historico.length);
   console.log('forecast registros:', forecast.length);
