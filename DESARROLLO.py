@@ -117,6 +117,10 @@ df_rotation.to_csv('data/rotation.csv', index=False)
 # %% Generación CSV para el html del forecasting
 import warnings
 warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore', category=FutureWarning)
+import logging
+logging.disable(logging.WARNING)
+
 from tqdm import tqdm
 
 productos_ab = df_rot[df_rot['cls'].isin(['A', 'B'])]['product_id'].unique()
@@ -294,7 +298,63 @@ df_forecast = pipeline_forecast(df_vta_fore)
 print(df_forecast.head())
 print(f"Productos procesados: {df_forecast['product_id'].nunique()}")
 #%%
+# ── Calendario completo últimas 13 semanas ────
+fecha_corte_hist = df_vta_fore['semana_fecha'].max() - pd.Timedelta(weeks=13)
+semanas_hist = pd.date_range(
+    start=fecha_corte_hist,
+    end=df_vta_fore['semana_fecha'].max(),
+    freq='W-MON'
+)
 
+idx = pd.MultiIndex.from_product(
+    [productos_ab, semanas_hist],
+    names=['product_id', 'semana_fecha']
+)
+df_hist_cal = pd.DataFrame(index=idx).reset_index()
+
+# ── Pegar ventas reales ───────────────────────
+df_hist_cal = df_hist_cal.merge(
+    df_vta_fore[['product_id', 'semana_fecha', 'ventas']],
+    on=['product_id', 'semana_fecha'],
+    how='left'
+)
+df_hist_cal['ventas'] = df_hist_cal['ventas'].fillna(0)
+df_hist_cal['tipo'] = 'historico'
+df_hist_cal['modelo'] = ''
+df_hist_cal = df_hist_cal.rename(columns={'ventas': 'valor'})
+
+# ── Forecast ──────────────────────────────────
+df_fore_export = df_forecast[['product_id', 'semana_fecha', 'forecast', 'modelo']].copy()
+df_fore_export['tipo'] = 'forecast'
+df_fore_export = df_fore_export.rename(columns={'forecast': 'valor'})
+
+# ── Unir ambos ────────────────────────────────
+df_chart = pd.concat([df_hist_cal, df_fore_export], ignore_index=True)
+
+# ── Pegar code y desc ─────────────────────────
+df_chart = df_chart.merge(
+    df_prod[['product_id', 'default_code', 'description']],
+    on='product_id',
+    how='left'
+)
+
+df_chart = df_chart.rename(columns={
+    'default_code': 'code',
+    'description': 'desc'
+})
+
+# ── Exportar ──────────────────────────────────
+df_chart.to_csv('data/forecast_chart.csv', index=False)
+
+# %% Generar CSV para ver stock y los parametros de los productos esto en html pestaña de forecasting
+# Parámetros de todos los productos
+df_params = df_prod[['product_id', 'default_code', 'sale_delay', 'multiple']].copy()
+df_params.to_csv('data/productos_params.csv', index=False)
+
+# Stock por almacén de todos los productos
+df_stock_wh = df_inv[['product_id', 'wh_id', 'on_hand', 'reserved_quantity']].copy()
+df_stock_wh['almacen'] = 'Almacén ' + df_stock_wh['wh_id'].astype(str)
+df_stock_wh.to_csv('data/stock_almacen.csv', index=False)
 
 # %%
 # # Solo se usa para ver el top productos con venta
