@@ -915,12 +915,15 @@ async function loadVentasTopData() {
     const res = await fetch('https://raw.githubusercontent.com/MajoAlv/MVP-/main/data/ventas_top.csv');
     const text = await res.text();
     ventasTopData = parseCSV(text);
-    ventasTopData.forEach(r => {
+   ventasTopData.forEach(r => {
       r.product_id = parseInt(r.product_id) || 0;
       r.ventas_totales = parseFloat(r.ventas_totales) || 0;
       r.clientes_unicos = parseFloat(r.clientes_unicos) || 0;
       r.avg_semanal = parseFloat(r.avg_semanal) || 0;
+      r.frecuencia_venta = parseFloat(r.frecuencia_venta) || 0;
     });
+    ventasTopData.sort((a, b) => b.frecuencia_venta - a.frecuencia_venta);
+    ventasData = [...ventasTopData]
     renderVentasTable();
     updateVentasKPIs();
   } catch(e) {
