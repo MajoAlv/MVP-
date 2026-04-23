@@ -863,11 +863,11 @@ function filterForecast(q) {
         <div class="w-full chart-bar bg-primary/15 border-2 border-dashed border-primary/50 rounded-t-lg transition-colors" style="height:0%" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
       </div>`)
   ].join('');
-  requestAnimationFrame(() => {
+  setTimeout(() => {
     el.querySelectorAll('.chart-bar').forEach((b, i) => {
       setTimeout(() => { b.style.height = b.dataset.h; }, i * 50);
     });
-  });
+  }, 50);
 }
   
 function updateRotationKPIs() {
