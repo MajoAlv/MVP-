@@ -165,7 +165,7 @@ tailwind.config = {
     </button>
     <button onclick="showPage('forecast')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="forecast">
       <span class="material-symbols-outlined text-[20px]">query_stats</span>
-      <span>Forecasting</span>
+      <span>Pronóstico</span>
     </button>
     <button onclick="showPage('warehouse')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="warehouse">
       <span class="material-symbols-outlined text-[20px]">inventory_2</span>
@@ -362,8 +362,9 @@ tailwind.config = {
     <div id="page-forecast" class="page space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Pronóstico</p>
-          <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Product <span class="text-primary">Forecast</span></h2>
+          <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Análisis</p>
+          <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Pronóstico <span class="text-primary">Productos</span></h2>
+          <p class="text-sm text-on-surface-variant mt-1">Visualizador de pronósticos para productos de alta rotación</p>
         </div>
       </div>
       <!-- Search bar -->
@@ -533,9 +534,6 @@ tailwind.config = {
           <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Segmentación <span class="text-primary">Rotación</span></h2>
           <p class="text-sm text-on-surface-variant mt-1">Visualizador general de estructura inventario por SKU</p>
         </div>
-        <button onclick="exportCSV()" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-outline-variant/20 rounded-xl text-sm font-bold hover:bg-surface-container transition-all">
-          <span class="material-symbols-outlined text-[16px]">ios_share</span> Export CSV
-        </button>
       </div>
 
       <!-- Rotation KPIs -->
