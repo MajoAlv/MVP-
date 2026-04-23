@@ -814,6 +814,7 @@ async function loadForecastData() {
 }
 
 function filterForecast(q) {
+  console.log('filterForecast llamado con:', q);
   if (!q || q.trim() === '') {
     document.getElementById('forecast-bars').innerHTML = '';
     document.getElementById('forecast-model-badge').classList.add('hidden');
@@ -966,6 +967,7 @@ function drawForecastChart() {
 }
 
 function drawForecastBars() {
+  console.log('drawForecastBars llamado');
   const el = document.getElementById('forecast-bars');
   if (!el) return;
   const vals = [30,45,60,50,75,55,70,90,80,95,70,60,50,40,30];
