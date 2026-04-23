@@ -923,6 +923,7 @@ async function loadVentasTopData() {
       r.avg_semanal = parseFloat(r.avg_semanal) || 0;
       r.frecuencia_venta = parseFloat(r.frecuencia_venta) || 0;
     });
+    ventasTopData = ventasTopData.filter(r => r.code && r.code !== '-' && r.desc && r.desc !== '-');
     ventasTopData.sort((a, b) => b.frecuencia_venta - a.frecuencia_venta);
     ventasData = [...ventasTopData]
     renderVentasTable();
