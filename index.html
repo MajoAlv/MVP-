@@ -167,9 +167,9 @@ tailwind.config = {
       <span class="material-symbols-outlined text-[20px]">query_stats</span>
       <span>Pronóstico</span>
     </button>
-    <button onclick="showPage('warehouse')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="warehouse">
+    <button onclick="showPage('ventas')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="ventas">
       <span class="material-symbols-outlined text-[20px]">inventory_2</span>
-      <span>Warehouse View</span>
+      <span>Ventas</span>
     </button>
     <button onclick="showPage('rotation')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="rotation">
       <span class="material-symbols-outlined text-[20px]">low_priority</span>
@@ -334,7 +334,7 @@ tailwind.config = {
       <div class="bg-white rounded-2xl border border-outline-variant/10 overflow-hidden">
         <div class="p-6 flex justify-between items-center bg-surface-container-low/50">
           <h3 class="font-bold font-headline text-on-surface">Movimientos Recientes</h3>
-          <button onclick="showPage('warehouse')" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">Ver todos <span class="material-symbols-outlined text-[14px]">arrow_forward</span></button>
+          <button onclick="showPage('ventas')" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">Ver todos <span class="material-symbols-outlined text-[14px]">arrow_forward</span></button>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left min-w-[600px]">
@@ -453,50 +453,48 @@ tailwind.config = {
       </div>
     </div>
 
-    <!-- ═══ PAGE: WAREHOUSE ═══ -->
-    <div id="page-warehouse" class="page space-y-6">
+    <!-- ═══ PAGE: VENTAS ═══ -->
+    <div id="page-ventas" class="page space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Inventario</p>
-          <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Warehouse <span class="text-primary" id="wh-name">Alpha</span></h2>
-          <p class="text-sm text-on-surface-variant mt-1">Análisis de inventario y métricas operacionales — Q3 2024</p>
-        </div>
-        <div class="flex gap-2">
-          <button onclick="exportCSV()" class="px-4 py-2 bg-surface-container-high rounded-xl text-xs font-bold hover:bg-surface-variant transition-colors">Export CSV</button>
-          <button class="px-4 py-2 bg-surface-container-high rounded-xl text-xs font-bold hover:bg-surface-variant transition-colors">Imprimir</button>
+          <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Ventas</p>
+          <h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight">Análisis de <span class="text-primary">Ventas</span></h2>
+          <p class="text-sm text-on-surface-variant mt-1">Top productos por volumen de venta — últimas 24 semanas</p>
         </div>
       </div>
-
-      <!-- Warehouse KPIs -->
+    
+      <!-- Ventas KPIs -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="kpi-card bg-white rounded-2xl p-6 border border-outline-variant/10 relative overflow-hidden">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
-          <div class="flex justify-between items-start mb-3"><span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Códigos Activos</span><span class="material-symbols-outlined text-primary-fixed-dim text-[22px]">qr_code</span></div>
-          <p class="text-4xl font-bold font-headline">14,208</p>
-          <div class="mt-3 flex items-center gap-1 text-xs font-bold text-primary"><span class="material-symbols-outlined text-[14px]">trending_up</span>+2.4% mes anterior</div>
+          <div class="flex justify-between items-start mb-3"><span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Códigos Vendidos</span><span class="material-symbols-outlined text-primary-fixed-dim text-[22px]">bar_chart</span></div>
+          <p class="text-4xl font-bold font-headline" id="ventas-kpi-codigos">—</p>
+          <div class="mt-3 flex items-center gap-1 text-xs font-bold text-outline">Últimas 24 semanas</div>
         </div>
         <div class="kpi-card bg-white rounded-2xl p-6 border border-outline-variant/10 relative overflow-hidden">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
-          <div class="flex justify-between items-start mb-3"><span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Capacidad Usada</span><span class="material-symbols-outlined text-primary-fixed-dim text-[22px]">inventory</span></div>
-          <p class="text-4xl font-bold font-headline">82.4<span class="text-xl text-on-surface-variant ml-1">%</span></p>
-          <div class="mt-3 w-full bg-surface-container rounded-full h-1.5"><div class="bar-fill bg-primary h-full rounded-full" style="width:82.4%"></div></div>
+          <div class="flex justify-between items-start mb-3"><span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Clientes Únicos</span><span class="material-symbols-outlined text-primary-fixed-dim text-[22px]">group</span></div>
+          <p class="text-4xl font-bold font-headline" id="ventas-kpi-clientes">—</p>
+          <div class="mt-3 flex items-center gap-1 text-xs font-bold text-outline">Total periodo</div>
         </div>
         <div class="kpi-card bg-white rounded-2xl p-6 border border-outline-variant/10 relative overflow-hidden">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
-          <div class="flex justify-between items-start mb-3"><span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Inbound Hoy</span><span class="material-symbols-outlined text-primary-fixed-dim text-[22px]">download</span></div>
-          <p class="text-4xl font-bold font-headline">342</p>
-          <div class="mt-3 flex items-center gap-1 text-xs font-bold text-tertiary"><span class="material-symbols-outlined text-[14px]">schedule</span>12 envíos pendientes</div>
+          <div class="flex justify-between items-start mb-3"><span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Análisis Avanzado</span><span class="material-symbols-outlined text-primary-fixed-dim text-[22px]">insights</span></div>
+          <p class="text-2xl font-bold font-headline text-outline">Próximamente</p>
+          <div class="mt-3 flex items-center gap-1 text-xs font-bold text-outline">Disponible v2.0</div>
         </div>
       </div>
-
-      <!-- Top products table -->
+    
+      <!-- Tabla de ventas -->
       <div class="bg-white rounded-2xl border border-outline-variant/10 overflow-hidden">
         <div class="px-6 py-5 flex items-center justify-between bg-surface-container-low/50">
-          <div><h3 class="font-bold font-headline">Top 10 Productos por Frecuencia de Venta</h3><p class="text-xs text-on-surface-variant">Métricas de velocidad y disponibilidad</p></div>
-          <div class="flex items-center gap-2 bg-white border border-outline-variant/20 rounded-xl px-3 py-1.5 cursor-pointer hover:bg-surface-container transition-colors" onclick="toggleFilter(this)">
-            <span class="material-symbols-outlined text-[16px] text-outline">filter_list</span>
-            <span class="text-xs font-bold uppercase tracking-wider" id="filter-label">Todas las categorías</span>
-            <span class="material-symbols-outlined text-[14px] text-outline">expand_more</span>
+          <div><h3 class="font-bold font-headline">Productos por Volumen de Venta</h3><p class="text-xs text-on-surface-variant">Ordenados por piezas vendidas — últimas 24 semanas</p></div>
+          <div class="flex gap-2" id="ventas-filter-btns">
+            <button onclick="setVentasFilter('all',this)" class="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-bold transition-colors">Todo</button>
+            <button onclick="setVentasFilter('A',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">A</button>
+            <button onclick="setVentasFilter('B',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">B</button>
+            <button onclick="setVentasFilter('C',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">C</button>
+            <button onclick="setVentasFilter('D',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">D</button>
           </div>
         </div>
         <div class="overflow-x-auto">
@@ -505,26 +503,24 @@ tailwind.config = {
               <tr>
                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Código</th>
                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Descripción</th>
-                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Promedio Sem.</th>
-                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Stock Actual</th>
-                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Estado</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Rotación</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Prom. Semanal</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Piezas Vendidas</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-outline-variant/10" id="warehouse-table">
+            <tbody class="divide-y divide-outline-variant/10" id="ventas-table">
               <!-- JS populated -->
             </tbody>
           </table>
         </div>
         <div class="px-6 py-4 border-t border-outline-variant/10 flex justify-between items-center bg-surface-container-low/30">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant" id="wh-pagination-label">Mostrando 1-5 de 10</p>
-          <div class="flex gap-1.5">
-            <button onclick="warehousePage(-1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-primary hover:text-white transition-all"><span class="material-symbols-outlined text-[16px]">chevron_left</span></button>
-            <button id="wh-page-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-xs">1</button>
-            <button onclick="warehousePage(1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:bg-primary hover:text-white transition-all"><span class="material-symbols-outlined text-[16px]">chevron_right</span></button>
-          </div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant" id="ventas-pagination-label">Cargando...</p>
+          <div class="flex gap-1.5" id="ventas-pagination"></div>
         </div>
       </div>
     </div>
+   
+
 
     <!-- ═══ PAGE: ROTATION ═══ -->
     <div id="page-rotation" class="page space-y-6">
@@ -672,9 +668,9 @@ tailwind.config = {
     <span class="material-symbols-outlined text-[22px]">query_stats</span>
     <span class="text-[9px] font-bold uppercase">Forecast</span>
   </button>
-  <button onclick="showPage('warehouse')" class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-outline" id="mob-warehouse">
+  <button onclick="showPage('ventas')" class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-outline" id="mob-ventas">
     <span class="material-symbols-outlined text-[22px]">inventory_2</span>
-    <span class="text-[9px] font-bold uppercase">Almacén</span>
+    <span class="text-[9px] font-bold uppercase">Ventas</span>
   </button>
   <button onclick="showPage('rotation')" class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-outline" id="mob-rotation">
     <span class="material-symbols-outlined text-[22px]">low_priority</span>
@@ -703,6 +699,7 @@ let rotationData = [];
 let forecastData = [];
 let paramsData = [];
 let stockAlmacenData = [];
+let ventasTopData = [];
   
 const statusMap = {
   instock: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">En Stock</span>',
@@ -912,6 +909,97 @@ async function loadStockAlmacenData() {
     console.error('Error cargando stock_almacen.csv:', e);
   }
 }
+
+async function loadVentasTopData() {
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/MajoAlv/MVP-/main/data/ventas_top.csv');
+    const text = await res.text();
+    ventasTopData = parseCSV(text);
+    ventasTopData.forEach(r => {
+      r.product_id = parseInt(r.product_id) || 0;
+      r.ventas_totales = parseFloat(r.ventas_totales) || 0;
+      r.clientes_unicos = parseFloat(r.clientes_unicos) || 0;
+      r.avg_semanal = parseFloat(r.avg_semanal) || 0;
+    });
+    renderVentasTable();
+    updateVentasKPIs();
+  } catch(e) {
+    console.error('Error cargando ventas_top.csv:', e);
+  }
+}
+
+function updateVentasKPIs() {
+  document.getElementById('ventas-kpi-codigos').textContent = ventasTopData.length.toLocaleString('es-MX');
+  const totalClientes = ventasTopData.reduce((sum, r) => sum + r.clientes_unicos, 0);
+  document.getElementById('ventas-kpi-clientes').textContent = Math.round(totalClientes).toLocaleString('es-MX');
+}
+
+function renderVentasTable() {
+  const tbody = document.getElementById('ventas-table');
+  if (!tbody) return;
+  if (ventasData.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-sm text-on-surface-variant">Cargando datos...</td></tr>`;
+    return;
+  }
+  const start = ventasPage * VENTAS_PER_PAGE;
+  const page = ventasData.slice(start, start + VENTAS_PER_PAGE);
+  tbody.innerHTML = page.map(r => `
+    <tr class="hover:bg-surface-container-low/50 transition-colors cursor-default">
+      <td class="px-6 py-5 text-sm font-bold font-mono text-primary">${r.code || '-'}</td>
+      <td class="px-6 py-5 text-sm font-medium">${r.desc || '-'}</td>
+      <td class="px-6 py-5">${clsMap[r.cls] || ''}</td>
+      <td class="px-6 py-5 text-sm text-on-surface-variant text-right">${Number(r.avg_semanal).toLocaleString('es-MX', {maximumFractionDigits:1})}</td>
+      <td class="px-6 py-5 text-sm font-bold text-right">${Math.round(r.ventas_totales).toLocaleString('es-MX')}</td>
+    </tr>
+  `).join('');
+  document.getElementById('ventas-pagination-label').textContent = 
+    `Mostrando ${start+1}-${Math.min(start+VENTAS_PER_PAGE, ventasData.length)} de ${ventasData.length.toLocaleString('es-MX')}`;
+  renderVentasPagination();
+}
+
+function renderVentasPagination() {
+  const totalPages = Math.ceil(ventasData.length / VENTAS_PER_PAGE);
+  const container = document.getElementById('ventas-pagination');
+  if (!container) return;
+  let html = `
+    <button onclick="ventasPage_(-1)" class="w-8 h-8 flex items-center justify-center text-outline-variant hover:text-primary">
+      <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+    </button>`;
+  for (let i = 0; i < totalPages; i++) {
+    if (i === 0 || i === totalPages - 1 || Math.abs(i - ventasPage) <= 1) {
+      html += `<button onclick="ventasGoTo(${i})" class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold ${i === ventasPage ? 'bg-primary text-white' : 'hover:bg-surface-container'}">${i + 1}</button>`;
+    } else if (Math.abs(i - ventasPage) === 2) {
+      html += `<span class="flex items-center px-1 text-outline-variant text-xs">...</span>`;
+    }
+  }
+  html += `
+    <button onclick="ventasPage_(1)" class="w-8 h-8 flex items-center justify-center text-outline-variant hover:text-primary">
+      <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+    </button>`;
+  container.innerHTML = html;
+}
+
+function ventasPage_(dir) {
+  const totalPages = Math.ceil(ventasData.length / VENTAS_PER_PAGE);
+  ventasPage = Math.max(0, Math.min(totalPages - 1, ventasPage + dir));
+  renderVentasTable();
+}
+
+function ventasGoTo(page) {
+  ventasPage = page;
+  renderVentasTable();
+}
+
+function setVentasFilter(cls, btn) {
+  ventasFilter = cls;
+  document.querySelectorAll('#ventas-filter-btns button').forEach(b => {
+    b.className = 'px-3 py-1.5 rounded-full text-xs font-bold transition-colors border border-outline-variant/30 ' +
+      (b === btn ? 'bg-primary text-white border-transparent' : 'bg-white text-on-surface-variant hover:bg-surface-container');
+  });
+  ventasData = cls === 'all' ? [...ventasTopData] : ventasTopData.filter(r => r.cls === cls);
+  ventasPage = 0;
+  renderVentasTable();
+}  
   
 function updateRotationKPIs() {
   const high   = rotationData.filter(r => r.cls === 'A').length;
@@ -936,6 +1024,10 @@ let rotData = [];
 let rotFilter = 'all';
 let rotPage = 0;
 const ROT_PER_PAGE = 10;
+let ventasPage = 0;
+const VENTAS_PER_PAGE = 10;
+let ventasFilter = 'all';
+let ventasData = [];  
 
 // ═══════════════════════════════════════════════
 // NAVIGATION
@@ -962,7 +1054,7 @@ function showPage(name) {
     const q = document.getElementById('forecastSearch').value;
     if (!q || q.trim() === '') drawForecastBars();
   }
-  if (name === 'warehouse') renderWarehouseTable();
+  if (name === 'ventas') renderVentasTable();
   if (name === 'rotation') renderRotationTable();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1228,6 +1320,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadForecastData();
   loadParamsData();
   loadStockAlmacenData();
+  loadVentasTopData();
 });
 </script>
 </body>
