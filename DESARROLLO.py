@@ -115,11 +115,6 @@ df_rotation = df_rotation.rename(columns={
 df_rotation.to_csv('data/rotation.csv', index=False)
 
 # %% Generación CSV para el html del forecasting
-import warnings
-warnings.filterwarnings('ignore')
-warnings.filterwarnings('ignore', category=FutureWarning)
-import logging
-logging.disable(logging.WARNING)
 
 from tqdm import tqdm
 
@@ -172,6 +167,11 @@ def crear_features(df_producto):
     return df
 
 def procesar_producto(pid, df_vta_fore, n_test=8, n_forecast=4):
+    import warnings
+    warnings.filterwarnings('ignore')
+    warnings.filterwarnings('ignore', category=FutureWarning)
+    import logging
+    logging.disable(logging.WARNING)
     features = ['ewm_4', 'ewm_8', 'ewm_16', 'rolling_4', 'rolling_8', 
                 'clientes_unicos', 'semana_año', 'mes']
     
@@ -229,7 +229,14 @@ def procesar_producto(pid, df_vta_fore, n_test=8, n_forecast=4):
         y_train = y.iloc[:-n_test]
         X_test  = X.iloc[-n_test:]
         y_test  = y.iloc[-n_test:]
-        xgb = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
+        xgb = XGBRegressor(
+            n_estimators=100,
+            learning_rate=0.1,
+            random_state=42,
+            min_child_weight=1,
+            subsample=0.8,
+            colsample_bytree=0.8
+        )
         xgb.fit(X_train, y_train)
         pred_xgb = xgb.predict(X_test)
         modelos['XGB'] = mean_squared_error(y_test, pred_xgb)
@@ -256,13 +263,23 @@ def procesar_producto(pid, df_vta_fore, n_test=8, n_forecast=4):
             forecast = arima_full.predict(n_periods=n_forecast)
         elif mejor == 'XGB':
             df_feat_full = crear_features(df_p)
-            xgb_full = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
+            xgb_full = XGBRegressor(
+                n_estimators=100,
+                learning_rate=0.1,
+                random_state=42,
+                min_child_weight=1,
+                subsample=0.8,
+                colsample_bytree=0.8
+            )
             xgb_full.fit(df_feat_full[features], df_feat_full['ventas'])
             last_row = df_feat_full[features].iloc[[-1]]
             forecast = []
             for _ in range(n_forecast):
                 pred = xgb_full.predict(last_row)[0]
                 forecast.append(pred)
+            # Piso de seguridad
+            piso = serie[-4:].mean()
+            forecast = [max(f, piso * 0.5) for f in forecast]
     except:
         forecast = np.full(n_forecast, serie[-4:].mean())
 
@@ -355,160 +372,62 @@ df_params.to_csv('data/productos_params.csv', index=False)
 df_stock_wh = df_inv[['product_id', 'wh_id', 'on_hand', 'reserved_quantity']].copy()
 df_stock_wh['almacen'] = 'Almacén ' + df_stock_wh['wh_id'].astype(str)
 df_stock_wh.to_csv('data/stock_almacen.csv', index=False)
+# %% Generar CSV para pestaña de ventas html
+# ── Ventas totales por producto en 24 semanas ─
+df_ventas_top = df_vta_24.groupby('product_id', as_index=False).agg(
+    ventas_totales=('ventas', 'sum')
+)
 
+# ── Frecuencia de venta real desde df_mov ─────
+fecha_corte = df_vta_prod['semana_fecha'].max() - pd.Timedelta(weeks=24)
+df_freq_total = df_mov[df_mov['semana_fecha'] >= fecha_corte].groupby(
+    'product_id', as_index=False
+).agg(
+    frecuencia_venta=('product_qty', 'count')
+)
+df_ventas_top = df_ventas_top.merge(df_freq_total, on='product_id', how='left')
+df_ventas_top['frecuencia_venta'] = df_ventas_top['frecuencia_venta'].fillna(0)
+
+# ── Clientes únicos desde df_vta_prod filtrado ─
+df_clientes = df_vta_prod[df_vta_prod['semana_fecha'] >= fecha_corte].groupby(
+    'product_id', as_index=False
+).agg(clientes_unicos=('clientes_unicos', 'sum'))
+df_ventas_top = df_ventas_top.merge(df_clientes, on='product_id', how='left')
+
+# ── Pegar descripción desde df_prod ───────────
+df_ventas_top = df_ventas_top.merge(
+    df_prod[['product_id', 'default_code', 'description']],
+    on='product_id',
+    how='left'
+)
+
+# ── Pegar cls y avg_semanal desde df_rot ──────
+df_ventas_top = df_ventas_top.merge(
+    df_rot[['product_id', 'cls', 'avg_semanal']],
+    on='product_id',
+    how='left'
+)
+
+# ── Renombrar columnas ────────────────────────
+df_ventas_top = df_ventas_top.rename(columns={
+    'default_code': 'code',
+    'description': 'desc'
+})
+
+# ── Ordenar por frecuencia de venta descendente ─
+df_ventas_top = df_ventas_top.sort_values('frecuencia_venta', ascending=False).reset_index(drop=True)
+
+# ── Eliminar cosas que no tienen código ───────
+df_ventas_top = df_ventas_top[
+    df_ventas_top['code'].notna() & 
+    df_ventas_top['desc'].notna() &
+    (df_ventas_top['code'] != 'REVISAR') &
+    (df_ventas_top['desc'] != 'REVISAR') &
+    (df_ventas_top['code'] != '') &
+    (df_ventas_top['desc'] != '')
+]
+
+# ── Exportar ──────────────────────────────────
+df_ventas_top.to_csv('data/ventas_top.csv', index=False)
 # %%
-# # Solo se usa para ver el top productos con venta
-# freq_producto = df_alm_prod.groupby("product_id", as_index=False).agg(
-#     semanas_con_venta=("semana_fecha", "nunique"),
-#     total_ventas=("ventas", "sum")
-# )
-
-# top_freq = freq_producto.sort_values(
-#     "semanas_con_venta", ascending=False
-# ).head(20)
-
-# print(top_freq)
-
-# %%
-# Marcar el código y almacén a usar
-# prod=10727
-# alm=1
-
-# #Ordenar la BD y filtrarla
-
-# serie=df_alm_prod[(df_alm_prod["product_id"]==prod) & (df_alm_prod["wh_id"]==alm)]
-# serie=serie.sort_values("semana_fecha")
-
-# # Crear calendario de 2 años hacia atrás
-# hoy=pd.Timestamp.today()
-# inicio=(hoy-pd.DateOffset(years=2)).to_period("W").start_time
-# fin=hoy.to_period("W").start_time
-
-# calendario=pd.DataFrame({"semana_fecha":pd.date_range(start=inicio,end=fin,freq="W-MON")})
-
-# # Unir calendario con la serie
-# serie=calendario.merge(serie,on="semana_fecha",how="left")
-
-# # Rellenar faltantes
-# serie["ventas"]=serie["ventas"].fillna(0)
-# serie["clientes_unicos"]=serie["clientes_unicos"].fillna(0)
-
-# # Si quieres dejar enteros
-# serie["clientes_unicos"]=serie["clientes_unicos"].astype(int)
-
-# # Volver a poner producto y almacén
-# serie["product_id"]=serie["product_id"].fillna(prod)
-# serie["wh_id"]=serie["wh_id"].fillna(alm)
-
-# # Agregar columna con los datos suavizados ES PROBABLE QUE TENGAMOS QUE METERLE SPAN 8 PARA QUE TENGA MÁS MEMORIA
-# serie["ventas_suav"] = serie["ventas"].ewm(span=4).mean()
-
-# # Graficar ventas
-# plt.figure(figsize=(12,5))
-
-# plt.plot(serie["semana_fecha"], serie["ventas"], label="Real", alpha=0.5)
-# plt.plot(serie["semana_fecha"], serie["ventas_suav"], label="Exponencial")
-
-# plt.legend()
-# plt.title(f"Suavizado - Producto {prod} - WH {alm}")
-# plt.xlabel("Semana")
-# plt.ylabel("Ventas")
-
-# plt.xticks(rotation=45)
-# plt.show()
-# # %%
-# # # Generación de features para el modelo
-# # LAGS (memoria reciente)
-# serie["ewm_4"] = serie["ventas"].ewm(span=4).mean()
-# serie["ewm_8"] = serie["ventas"].ewm(span=8).mean()
-# serie["ewm_16"] = serie["ventas"].ewm(span=16).mean()
-# serie["rolling_4"] = serie["ventas"].rolling(4).mean()
-# serie["rolling_8"] = serie["ventas"].rolling(8).mean()
-# serie["rolling_16"] = serie["ventas"].rolling(16).mean()
-# serie["clientes_unicos"] = serie["clientes_unicos"]
-
-# # #Definir variable objetivo
-# serie["y"]=serie["ventas"]
-
-# # Limpiar NA
-# df_modelo = serie.dropna().copy()
-
-# # # Definición variables
-# features = [
-#     "ewm_4", "ewm_8", "ewm_16",
-#     "rolling_4", "rolling_8", "rolling_16",
-#     "clientes_unicos"
-# ]
-
-# X=df_modelo[features]
-# y=df_modelo["y"] 
-
-# train=df_modelo.iloc[:-8]   # entrenas con todo menos últimas 8 semanas para evaluar con lo demás
-# test=df_modelo.iloc[-8:]
-
-# X_train=train[features]
-# y_train=train["y"]
-
-# X_test=test[features]
-# y_test=test["y"]
-
-# # %%
-# # # Modelado random forest
-
-# model = RandomForestRegressor(
-#     n_estimators=100,
-#     random_state=42
-# )
-
-# model.fit(X_train, y_train)
-
-# pred_rf=model.predict(X_test)
-
-# mae_rf = mean_absolute_error(y_test, pred_rf)
-# media = y_test.mean()
-
-# error_pct_rf = mae_rf / media
-
-# print("RF Error %:", error_pct_rf)
-# print("RF MAE:", mae_rf)
-
-
-# # %% Modelado XGBR
-# model=XGBRegressor(
-#     objective="reg:squarederror",
-#     n_estimators=200,
-#     learning_rate=0.05,
-#     max_depth=4,
-#     subsample=0.8,
-#     colsample_bytree=0.8,
-#     random_state=42
-# )
-
-# model.fit(X_train, y_train)
-
-# # Predicción
-# pred_xgbr=model.predict(X_test)
-
-# # Evaluación
-# mae_xgbr = mean_absolute_error(y_test, pred_xgbr)
-# error_pct_xgbr = mae_xgbr / y_test.mean()
-
-# print("XGBR Error %:", error_pct_xgbr)
-# print("XGBR MAE:", mae_xgbr)
-
-# # %%
-# plt.figure(figsize=(14,6))
-
-# # Histórico (train)
-# plt.plot(train["semana_fecha"], train["y"], label="Train", color="blue")
-# # Real (test)
-# plt.plot(test["semana_fecha"], y_test, label="Real", color="black")
-# # Predicción
-# plt.plot(test["semana_fecha"], pred_rf, label="RandomForest", color="red")
-# plt.plot(test["semana_fecha"], pred_xgbr, label="XGBoost", color="orange", linestyle="--")
-# plt.legend()
-# plt.title(f"Forecast - Producto {prod} - WH {alm}")
-# plt.xlabel("Semana")
-# plt.ylabel("Ventas")
-# plt.xticks(rotation=45)
-# plt.show()
+print("Proceso completado con éxito")
