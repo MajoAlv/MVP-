@@ -959,6 +959,7 @@ function drawForecastChart() {
   `).join('');
   requestAnimationFrame(() => {
     el.querySelectorAll('.chart-bar').forEach((b, i) => {
+       console.log('barra', i, 'data-h:', b.dataset.h);
       setTimeout(() => { b.style.height = b.dataset.h; }, i * 60);
     });
   });
