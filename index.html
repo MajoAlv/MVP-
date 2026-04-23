@@ -422,25 +422,26 @@ tailwind.config = {
         <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
           <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Delay de Venta</p>
-          <p class="text-2xl font-bold font-headline">14 Días</p>
-          <p class="text-xs text-on-surface-variant mt-1">Lead time estándar</p>
+          <p class="text-2xl font-bold font-headline" id="forecast-delay">—</p>
+          <p class="text-xs text-on-surface-variant mt-1">Días lead time</p>
         </div>
         <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
           <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Múltiplo Orden</p>
-          <p class="text-2xl font-bold font-headline">× 24</p>
+          <p class="text-2xl font-bold font-headline" id="forecast-multiple">—</p>
           <p class="text-xs text-on-surface-variant mt-1">Restricción bulk</p>
         </div>
         <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
           <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Stock Seguridad</p>
-          <p class="text-2xl font-bold font-headline">120 Un.</p>
-          <p class="text-xs text-tertiary font-bold mt-1">+12% vs año anterior</p>
+          <p class="text-2xl font-bold font-headline">Próximamente</p>
+          <p class="text-xs text-on-surface-variant mt-1">Disponible v2.0</p>
         </div>
-        <div class="kpi-card bg-primary rounded-2xl p-5 text-white relative overflow-hidden shadow-lg shadow-primary/20">
-          <p class="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">Orden Recomendada</p>
-          <p class="text-2xl font-bold font-headline">1,248 Un.</p>
-          <button class="mt-3 w-full bg-white text-primary text-[10px] font-bold py-2 rounded-xl hover:bg-primary-fixed transition-colors uppercase tracking-widest">Aprobar OC</button>
+        <div class="kpi-card bg-white rounded-2xl p-5 border border-outline-variant/10 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Orden Recomendada</p>
+          <p class="text-2xl font-bold font-headline">Próximamente</p>
+          <p class="text-xs text-on-surface-variant mt-1">Disponible v2.0</p>
         </div>
       </div>
 
@@ -468,22 +469,20 @@ tailwind.config = {
       <!-- Warehouse distribution table -->
       <div class="bg-white rounded-2xl border border-outline-variant/10 overflow-hidden">
         <div class="p-6 bg-surface-container-low/50 flex justify-between items-center">
-          <h3 class="font-bold font-headline">Distribución Global por Almacén</h3>
-          <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase">Sync Activo</span>
+          <h3 class="font-bold font-headline">Stock por Almacén</h3>
+          <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase">En tiempo real</span>
         </div>
         <table class="w-full text-left">
           <thead class="bg-surface-container-high/40">
             <tr>
-              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Ubicación</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Almacén</th>
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">En Mano</th>
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Reservado</th>
-              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Utilización</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Disponible</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-outline-variant/10">
-            <tr class="hover:bg-surface-container-low/50"><td class="px-6 py-4"><p class="text-sm font-bold">Frankfurt (EU-Central)</p><p class="text-[10px] text-on-surface-variant">Hub Principal</p></td><td class="px-6 py-4 text-sm font-medium">840</td><td class="px-6 py-4 text-sm text-tertiary font-medium">120</td><td class="px-6 py-4 w-40"><div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden"><div class="bar-fill h-full bg-primary rounded-full" style="width:78%"></div></div></td></tr>
-            <tr class="hover:bg-surface-container-low/50"><td class="px-6 py-4"><p class="text-sm font-bold">Singapore (APAC-South)</p><p class="text-[10px] text-on-surface-variant">Terminal Satélite</p></td><td class="px-6 py-4 text-sm font-medium">412</td><td class="px-6 py-4 text-sm text-tertiary font-medium">85</td><td class="px-6 py-4 w-40"><div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden"><div class="bar-fill h-full bg-primary rounded-full" style="width:45%"></div></div></td></tr>
-            <tr class="hover:bg-surface-container-low/50"><td class="px-6 py-4"><p class="text-sm font-bold">New Jersey (US-East)</p><p class="text-[10px] text-on-surface-variant">Logística Regional</p></td><td class="px-6 py-4 text-sm font-medium">2,100</td><td class="px-6 py-4 text-sm text-error font-bold">450</td><td class="px-6 py-4 w-40"><div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden"><div class="bar-fill h-full bg-error rounded-full" style="width:92%"></div></div></td></tr>
+          <tbody class="divide-y divide-outline-variant/10" id="forecast-stock-table">
+            <tr><td colspan="4" class="px-6 py-6 text-center text-sm text-on-surface-variant">Busca un producto para ver su stock</td></tr>
           </tbody>
         </table>
       </div>
@@ -740,7 +739,9 @@ const warehouseData = [
 
 let rotationData = [];
 let forecastData = [];
-
+let paramsData = [];
+let stockAlmacenData = [];
+  
 const statusMap = {
   instock: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">En Stock</span>',
   low: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-tertiary-fixed text-tertiary">Stock Bajo</span>',
@@ -862,6 +863,31 @@ function filterForecast(q) {
         <div class="w-full chart-bar rounded-t-lg transition-all" style="height:0%;background-color:transparent;border:2px dashed #00346f;opacity:0.6;align-self:flex-end" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
       </div>`)
   ].join('');
+  
+  const params = paramsData.find(r => r.product_id === pid);
+  if (params) {
+    document.getElementById('forecast-delay').textContent = params.sale_delay + ' días';
+    document.getElementById('forecast-multiple').textContent = '× ' + params.multiple;
+  } else {
+    document.getElementById('forecast-delay').textContent = '—';
+    document.getElementById('forecast-multiple').textContent = '—';
+  }
+  
+  const stockProd = stockAlmacenData.filter(r => r.product_id === pid);
+  const tablaEl = document.getElementById('forecast-stock-table');
+  if (tablaEl) {
+    if (stockProd.length === 0) {
+      tablaEl.innerHTML = `<tr><td colspan="4" class="px-6 py-6 text-center text-sm text-on-surface-variant">Sin stock registrado</td></tr>`;
+    } else {
+      tablaEl.innerHTML = stockProd.map(r => `
+        <tr class="hover:bg-surface-container-low/50">
+          <td class="px-6 py-4 text-sm font-bold">${r.almacen}</td>
+          <td class="px-6 py-4 text-sm">${Number(r.on_hand).toLocaleString('es-MX')}</td>
+          <td class="px-6 py-4 text-sm text-tertiary">${Number(r.reserved_quantity).toLocaleString('es-MX')}</td>
+          <td class="px-6 py-4 text-sm font-bold text-primary">${Number(r.on_hand - r.reserved_quantity).toLocaleString('es-MX')}</td>
+        </tr>`).join('');
+    }
+  }
   setTimeout(() => {
     el.querySelectorAll('.chart-bar').forEach((b, i) => {
       setTimeout(() => { b.style.height = b.dataset.h; }, i * 50);
@@ -884,6 +910,36 @@ function filterForecast(q) {
     ).join('');
   }
   
+}
+
+async function loadParamsData() {
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/MajoAlv/MVP-/main/data/productos_params.csv');
+    const text = await res.text();
+    paramsData = parseCSV(text);
+    paramsData.forEach(r => {
+      r.product_id = parseInt(r.product_id) || 0;
+      r.sale_delay = parseFloat(r.sale_delay) || 0;
+      r.multiple = parseFloat(r.multiple) || 0;
+    });
+  } catch(e) {
+    console.error('Error cargando productos_params.csv:', e);
+  }
+}
+
+async function loadStockAlmacenData() {
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/MajoAlv/MVP-/main/data/stock_almacen.csv');
+    const text = await res.text();
+    stockAlmacenData = parseCSV(text);
+    stockAlmacenData.forEach(r => {
+      r.product_id = parseInt(r.product_id) || 0;
+      r.on_hand = parseFloat(r.on_hand) || 0;
+      r.reserved_quantity = parseFloat(r.reserved_quantity) || 0;
+    });
+  } catch(e) {
+    console.error('Error cargando stock_almacen.csv:', e);
+  }
 }
   
 function updateRotationKPIs() {
@@ -1199,6 +1255,8 @@ window.addEventListener('DOMContentLoaded', () => {
   renderWarehouseTable();
   loadRotationData();
   loadForecastData();
+  loadParamsData();
+  loadStockAlmacenData();
 });
 </script>
 </body>
