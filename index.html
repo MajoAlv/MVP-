@@ -409,7 +409,7 @@ tailwind.config = {
           <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Buscar Producto</label>
           <div class="relative">
             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-            <input id="forecastSearch" type="text" placeholder="SKU o product_id (ej: COMP-AX500-BK)" class="w-full pl-10 pr-4 py-3 bg-surface-container-low border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" oninput="filterForecast(this.value)"/>
+            <input id="forecastSearch" type="text" placeholder="SKU o product_id (ej: COMP-AX500-BK)" class="w-full pl-10 pr-4 py-3 bg-surface-container-low border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"/>
           </div>
         </div>
         <button onclick="filterForecast(document.getElementById('forecastSearch').value)" class="bg-primary text-white px-7 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-primary-container transition-colors whitespace-nowrap">
@@ -460,8 +460,8 @@ tailwind.config = {
         <div style="height:256px" class="relative flex items-end gap-1 px-2" id="forecast-bars">
           <!-- JS generated -->
         </div>
-        <div class="flex justify-between mt-3 text-[10px] font-bold text-outline uppercase px-2">
-          <span>Q1 2023</span><span>Q2 2023</span><span>Q3 2023</span><span>Q4 2023</span><span class="text-primary">Forecast Q1</span>
+        <div class="flex justify-between mt-3 text-[10px] font-bold text-outline uppercase px-2" id="forecast-x-axis">
+          <span>—</span><span>—</span><span>—</span><span>—</span><span class="text-primary">Forecast</span>
         </div>
       </div>
 
@@ -814,7 +814,6 @@ async function loadForecastData() {
 }
 
 function filterForecast(q) {
-  console.log('filterForecast llamado con:', q);
   if (!q || q.trim() === '') {
     document.getElementById('forecast-bars').innerHTML = '';
     document.getElementById('forecast-model-badge').classList.add('hidden');
@@ -826,8 +825,10 @@ function filterForecast(q) {
     (r.desc || '').toLowerCase().includes(ql)
   );
   if (!producto) {
-    document.getElementById('forecast-bars').innerHTML = 
-      '<p class="text-sm text-on-surface-variant m-auto">No se encontró el producto.</p>';
+    document.getElementById('forecast-bars').innerHTML = '';
+    document.getElementById('forecast-model-badge').classList.add('hidden');
+    document.getElementById('forecast-product-title').textContent = 'Busca un producto rotación A o B para ver su proyección';
+    document.getElementById('forecast-x-axis').innerHTML = '<span>—</span><span>—</span><span>—</span><span>—</span><span class="text-primary">Forecast</span>';
     return;
   }
   const pid = parseInt(producto.product_id);
@@ -848,19 +849,15 @@ function filterForecast(q) {
   const valores = datos.map(r => r.valor).sort((a,b) => a - b);
   const p95 = valores[Math.floor(valores.length * 0.95)] || 1;
   const maxVal = Math.max(p95, 1);
-  console.log('maxVal:', maxVal);
-  console.log('historico registros:', historico.length);
-  console.log('forecast registros:', forecast.length);
-  console.log('primer historico:', historico[0]);
   const el = document.getElementById('forecast-bars');
   el.innerHTML = [
     ...historico.map(r => `
-      <div class="flex-1 flex flex-col items-end gap-1 has-tooltip relative" style="height:100%">
+      <div class="flex-1 flex flex-col-reverse items-end gap-1 has-tooltip relative" style="height:100%">
         <div class="tooltip-box">${r.valor} un.</div>
         <div class="w-full chart-bar rounded-t-lg transition-all" style="height:0%;background-color:#00346f;opacity:0.4;align-self:flex-end" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
       </div>`),
     ...forecast.map(r => `
-      <div class="flex-1 flex flex-col items-end gap-1 has-tooltip relative" style="height:100%">
+      <div class="flex-1 flex flex-col-reverse items-end gap-1 has-tooltip relative" style="height:100%">
         <div class="tooltip-box">${r.valor} un. (forecast)</div>
         <div class="w-full chart-bar rounded-t-lg transition-all" style="height:0%;background-color:transparent;border:2px dashed #00346f;opacity:0.6;align-self:flex-end" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
       </div>`)
@@ -870,6 +867,23 @@ function filterForecast(q) {
       setTimeout(() => { b.style.height = b.dataset.h; }, i * 50);
     });
   }, 50);
+
+  const etiquetasEl = document.getElementById('forecast-x-axis');
+  if (etiquetasEl) {
+    const fechasHistorico = historico.map(r => {
+      const d = new Date(r.semana_fecha);
+      return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    });
+    const etiquetas = [...fechasHistorico, ...['', '', '', '']];
+    etiquetasEl.innerHTML = etiquetas.map((f, i) => 
+      i === etiquetas.length - 1 
+        ? `<span class="text-primary font-bold">Forecast</span>`
+        : i >= fechasHistorico.length 
+          ? `<span></span>`
+          : `<span>${f}</span>`
+    ).join('');
+  }
+  
 }
   
 function updateRotationKPIs() {
@@ -962,7 +976,6 @@ function drawForecastChart() {
   `).join('');
   requestAnimationFrame(() => {
     el.querySelectorAll('.chart-bar').forEach((b, i) => {
-       console.log('barra', i, 'data-h:', b.dataset.h);
       setTimeout(() => { b.style.height = b.dataset.h; }, i * 60);
     });
   });
