@@ -409,7 +409,7 @@ tailwind.config = {
           <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Buscar Producto</label>
           <div class="relative">
             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-            <input id="forecastSearch" type="text" placeholder="SKU o product_id (ej: COMP-AX500-BK)" class="w-full pl-10 pr-4 py-3 bg-surface-container-low border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all" oninput="filterForecast(this.value)"/>
+            <input id="forecastSearch" type="text" placeholder="SKU o product_id (ej: COMP-AX500-BK)" class="w-full pl-10 pr-4 py-3 bg-surface-container-low border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"/>
           </div>
         </div>
         <button onclick="filterForecast(document.getElementById('forecastSearch').value)" class="bg-primary text-white px-7 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-primary-container transition-colors whitespace-nowrap">
@@ -448,19 +448,20 @@ tailwind.config = {
       <div class="bg-white rounded-2xl p-6 border border-outline-variant/10">
         <div class="flex justify-between items-center mb-6">
           <div>
-            <h3 class="font-bold font-headline text-on-surface">Proyección de Demanda</h3>
-            <p class="text-xs text-on-surface-variant">52 semanas históricas vs proyección 4 semanas</p>
+            <h3 class="font-bold font-headline text-on-surface" id="forecast-product-title">Busca un producto para ver su proyección</h3>
+<p class="text-xs text-on-surface-variant">13 semanas históricas vs proyección 4 semanas</p>
           </div>
-          <div class="flex gap-4 text-xs font-bold">
+          <div class="flex gap-4 text-xs font-bold items-center">
             <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-primary inline-block"></span>Histórico</span>
             <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full border-2 border-dashed border-primary inline-block"></span>Forecast</span>
+            <span id="forecast-model-badge" class="hidden px-2 py-1 bg-primary-fixed text-on-primary-fixed-variant text-[10px] font-black uppercase rounded tracking-wider"></span>
           </div>
         </div>
-        <div class="h-64 relative flex items-end gap-1 px-2" id="forecast-bars">
+        <div style="height:256px" class="relative flex items-end gap-1 px-2" id="forecast-bars">
           <!-- JS generated -->
         </div>
-        <div class="flex justify-between mt-3 text-[10px] font-bold text-outline uppercase px-2">
-          <span>Q1 2023</span><span>Q2 2023</span><span>Q3 2023</span><span>Q4 2023</span><span class="text-primary">Forecast Q1</span>
+        <div class="flex justify-between mt-3 text-[10px] font-bold text-outline uppercase px-2" id="forecast-x-axis">
+          <span>—</span><span>—</span><span>—</span><span>—</span><span class="text-primary">Forecast</span>
         </div>
       </div>
 
@@ -738,6 +739,7 @@ const warehouseData = [
 ];
 
 let rotationData = [];
+let forecastData = [];
 
 const statusMap = {
   instock: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">En Stock</span>',
@@ -797,6 +799,93 @@ async function loadRotationData() {
   }
 }
 
+async function loadForecastData() {
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/MajoAlv/MVP-/main/data/forecast_chart.csv');
+    const text = await res.text();
+    forecastData = parseCSV(text);
+    forecastData.forEach(r => {
+      r.valor = parseFloat(r.valor) || 0;
+      r.product_id = parseInt(r.product_id) || 0;
+    });
+  } catch(e) {
+    console.error('Error cargando forecast_chart.csv:', e);
+  }
+}
+
+function filterForecast(q) {
+  if (!q || q.trim() === '') {
+    document.getElementById('forecast-bars').innerHTML = '';
+    document.getElementById('forecast-model-badge').classList.add('hidden');
+    return;
+  }
+  const ql = q.toLowerCase();
+  const producto = forecastData.find(r =>
+    (r.code || '').toLowerCase().includes(ql) ||
+    (r.desc || '').toLowerCase().includes(ql)
+  );
+  if (!producto) {
+    document.getElementById('forecast-bars').innerHTML = '';
+    document.getElementById('forecast-model-badge').classList.add('hidden');
+    document.getElementById('forecast-product-title').textContent = 'Busca un producto rotación A o B para ver su proyección';
+    document.getElementById('forecast-x-axis').innerHTML = '<span>—</span><span>—</span><span>—</span><span>—</span><span class="text-primary">Forecast</span>';
+    return;
+  }
+  const pid = parseInt(producto.product_id);
+  const datos = forecastData.filter(r => parseInt(r.product_id) === pid).sort((a,b) => new Date(a.semana_fecha) - new Date(b.semana_fecha));
+  const historico = datos.filter(r => r.tipo === 'historico');
+  const forecast  = datos.filter(r => r.tipo === 'forecast');
+  const modelo = forecast[0]?.modelo || '';
+
+  // Badge del modelo
+  const badge = document.getElementById('forecast-model-badge');
+  badge.textContent = `Modelo: ${modelo}`;
+  badge.classList.remove('hidden');
+
+  // Título del producto
+  document.getElementById('forecast-product-title').textContent = `${producto.code} — ${producto.desc}`;
+
+  // Gráfica
+  const valores = datos.map(r => r.valor).sort((a,b) => a - b);
+  const p95 = valores[Math.floor(valores.length * 0.95)] || 1;
+  const maxVal = Math.max(p95, 1);
+  const el = document.getElementById('forecast-bars');
+  el.innerHTML = [
+    ...historico.map(r => `
+      <div class="flex-1 flex flex-col-reverse items-end gap-1 has-tooltip relative" style="height:100%">
+        <div class="tooltip-box">${r.valor} un.</div>
+        <div class="w-full chart-bar rounded-t-lg transition-all" style="height:0%;background-color:#00346f;opacity:0.4;align-self:flex-end" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
+      </div>`),
+    ...forecast.map(r => `
+      <div class="flex-1 flex flex-col-reverse items-end gap-1 has-tooltip relative" style="height:100%">
+        <div class="tooltip-box">${r.valor} un. (forecast)</div>
+        <div class="w-full chart-bar rounded-t-lg transition-all" style="height:0%;background-color:transparent;border:2px dashed #00346f;opacity:0.6;align-self:flex-end" data-h="${(r.valor/maxVal*100).toFixed(1)}%"></div>
+      </div>`)
+  ].join('');
+  setTimeout(() => {
+    el.querySelectorAll('.chart-bar').forEach((b, i) => {
+      setTimeout(() => { b.style.height = b.dataset.h; }, i * 50);
+    });
+  }, 50);
+
+  const etiquetasEl = document.getElementById('forecast-x-axis');
+  if (etiquetasEl) {
+    const fechasHistorico = historico.map(r => {
+      const d = new Date(r.semana_fecha);
+      return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    });
+    const etiquetas = [...fechasHistorico, ...['', '', '', '']];
+    etiquetasEl.innerHTML = etiquetas.map((f, i) => 
+      i === etiquetas.length - 1 
+        ? `<span class="text-primary font-bold">Forecast</span>`
+        : i >= fechasHistorico.length 
+          ? `<span></span>`
+          : `<span>${f}</span>`
+    ).join('');
+  }
+  
+}
+  
 function updateRotationKPIs() {
   const high   = rotationData.filter(r => r.cls === 'A').length;
   const medium = rotationData.filter(r => r.cls === 'B').length;
@@ -842,7 +931,10 @@ function showPage(name) {
   closeSidebar();
   // Trigger animations
   if (name === 'dashboard') drawForecastChart();
-  if (name === 'forecast') drawForecastBars();
+  if (name === 'forecast') {
+    const q = document.getElementById('forecastSearch').value;
+    if (!q || q.trim() === '') drawForecastBars();
+  }
   if (name === 'warehouse') renderWarehouseTable();
   if (name === 'rotation') renderRotationTable();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -890,6 +982,7 @@ function drawForecastChart() {
 }
 
 function drawForecastBars() {
+  console.log('drawForecastBars llamado');
   const el = document.getElementById('forecast-bars');
   if (!el) return;
   const vals = [30,45,60,50,75,55,70,90,80,95,70,60,50,40,30];
@@ -1105,6 +1198,7 @@ window.addEventListener('DOMContentLoaded', () => {
   drawForecastChart();
   renderWarehouseTable();
   loadRotationData();
+  loadForecastData();
 });
 </script>
 </body>
