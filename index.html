@@ -159,11 +159,11 @@ tailwind.config = {
 
   <!-- Nav -->
   <nav class="flex-1 flex flex-col gap-0.5 px-3">
-    <button onclick="showPage('dashboard')" class="hidden nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface hover:bg-surface-container" data-page="dashboard">
+    <button onclick="showPage('dashboard')" class="nav-item active w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface hover:bg-surface-container" data-page="dashboard">
       <span class="material-symbols-outlined text-[20px]">dashboard</span>
       <span>KPI Dashboard</span>
     </button>
-    <button onclick="showPage('forecast')" class="nav-item active w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="forecast">
+    <button onclick="showPage('forecast')" class="nav-item w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container" data-page="forecast">
       <span class="material-symbols-outlined text-[20px]">query_stats</span>
       <span>Pronóstico</span>
     </button>
@@ -229,7 +229,7 @@ tailwind.config = {
   <main class="flex-1 p-6 md:p-8 space-y-0">
 
     <!-- ═══ PAGE: DASHBOARD ═══ -->
-    <div id="page-dashboard" class="page space-y-6">
+    <div id="page-dashboard" class="page active space-y-6">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -359,7 +359,7 @@ tailwind.config = {
     </div>
 
     <!-- ═══ PAGE: FORECAST ═══ -->
-    <div id="page-forecast" class="page active space-y-6">
+    <div id="page-forecast" class="page space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <p class="text-xs text-outline font-mono uppercase tracking-widest mb-1">Análisis</p>
@@ -488,7 +488,7 @@ tailwind.config = {
       <!-- Tabla de ventas -->
       <div class="bg-white rounded-2xl border border-outline-variant/10 overflow-hidden">
         <div class="px-6 py-5 flex items-center justify-between bg-surface-container-low/50">
-          <div><h3 class="font-bold font-headline">Productos ordenados por volumen de venta</h3>
+          <div><h3 class="font-bold font-headline">Productos por Volumen de Venta</h3><p class="text-xs text-on-surface-variant">Ordenados por piezas vendidas — últimas 24 semanas</p></div>
           <div class="flex gap-2" id="ventas-filter-btns">
             <button onclick="setVentasFilter('all',this)" class="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-bold transition-colors">Todo</button>
             <button onclick="setVentasFilter('A',this)" class="px-3 py-1.5 bg-white border border-outline-variant/30 text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container transition-colors">A</button>
@@ -660,7 +660,7 @@ tailwind.config = {
 
 <!-- Mobile bottom nav -->
 <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-outline-variant/20 flex justify-around items-center py-2 z-50">
-  <button onclick="showPage('dashboard')" class="hidden flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-primary" id="mob-dashboard">
+  <button onclick="showPage('dashboard')" class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors text-primary" id="mob-dashboard">
     <span class="material-symbols-outlined text-[22px]" style="font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">dashboard</span>
     <span class="text-[9px] font-bold uppercase">KPI</span>
   </button>
@@ -1019,7 +1019,7 @@ function updateRotationKPIs() {
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
-let currentPage = 'forecast';
+let currentPage = 'dashboard';
 let whPage = 0;
 const WH_PER_PAGE = 5;
 let whData = [...warehouseData];
@@ -1317,6 +1317,8 @@ function toggleFilter(el) {
 // INIT
 // ═══════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  drawForecastChart();
+  renderWarehouseTable();
   loadRotationData();
   loadForecastData();
   loadParamsData();
