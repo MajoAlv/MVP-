@@ -504,6 +504,7 @@ tailwind.config = {
                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Código</th>
                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Descripción</th>
                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Rotación</th>
+                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Frecuencia</th>
                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Prom. Semanal</th>
                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Piezas Vendidas</th>
               </tr>
@@ -951,6 +952,7 @@ function renderVentasTable() {
       <td class="px-6 py-5 text-sm font-bold font-mono text-primary">${r.code || '-'}</td>
       <td class="px-6 py-5 text-sm font-medium">${r.desc || '-'}</td>
       <td class="px-6 py-5">${clsMap[r.cls] || ''}</td>
+      <td class="px-6 py-5 text-sm text-right">${Math.round(r.frecuencia_venta).toLocaleString('es-MX')}</td>
       <td class="px-6 py-5 text-sm text-on-surface-variant text-right">${Number(r.avg_semanal).toLocaleString('es-MX', {maximumFractionDigits:1})}</td>
       <td class="px-6 py-5 text-sm font-bold text-right">${Math.round(r.ventas_totales).toLocaleString('es-MX')}</td>
     </tr>
